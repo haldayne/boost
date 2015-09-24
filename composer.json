@@ -1,0 +1,31 @@
+{
+    "name": "haldayne/data-structure",
+    "description": "Complements the Standard PHP Library with an assortment of common data structures.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Bishop Bettini", "email": "bishop@php.net"
+        }
+    ],
+    "require": {
+        "php": "~5.5.0"
+    },
+    "autoload": {
+        "classmap": [ "src" ],
+        "psr-4": {
+            "Haldayne\\DataStructure\\": "src/"
+        }
+    },
+    "config": {
+        "preferred-install": "dist"
+    },
+    "minimum-stability": "stable",
+    "require-dev": {
+        "phpunit/phpunit": "~4.0"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Haldayne\\DataStructure\\": "tests/"
+        }
+    }
+}
