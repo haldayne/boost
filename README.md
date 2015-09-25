@@ -1,17 +1,17 @@
 # *Make the common stuff easy (and legible).*
 
-Most PHP programming consists of data-pushing between a database and a browser, which means a lot of string and array processing.  Splitting strings, walking arrays, etc.  Sadly, PHP is horribly verbose when it comes this common stuff, at least when compared to JS, python, etc.  This library addresses this sadness with:
+Most PHP programming consists of data-pushing between a database and a browser, which means a lot of string & array processing.  Think about splitting strings, walking arrays, and so on.  Sadly, when it comes this common stuff, PHP is horribly verbose compared to JS, python, etc.  This library addresses this sadness with:
 
-* callable driven, OO fluent interfaces to array processing
 * toolbox approach to string manipulation
+* OO-fluent interfaces centered around callables for array processing
 
-# Let's get started:
+# Let's get started
 
 You need at least PHP 5.5.0.  No other extensions are required.
 
 Install via composer: `php composer.phar require haldayne/boost *`
 
-# Using:
+# Using Boost
 
 ## Array processing with `Map`
 
@@ -41,12 +41,12 @@ Now we can use Map's fluent interface to solve real problems:
 
 # Related projects
 
-[Ardent, a Collections library for PHP.](https://github.com/morrisonlevi/Ardent)
+:alien: [Ardent, a Collections library for PHP.](https://github.com/morrisonlevi/Ardent)
 
 > While developing and helping others develop PHP applications I noticed the trend to use PHP's arrays in nearly every task. Arrays in PHP are useful but are overused because PHP doesn't have rich standard libraries for working with common data structures and algorithms. This library hopes to fill in that gap. Undoubtably, I've made mistakes in design and implementation; hopefully more community involvement can help identify and fix such mistakes.
 
 
-[PHP Collection - Basic collections for PHP.](http://jmsyst.com/libs/PHP-Collection)
+:alien: [PHP Collection - Basic collections for PHP.](http://jmsyst.com/libs/PHP-Collection)
 
 > Collections can be seen as more specialized arrays for which certain contracts are guaranteed.
 >

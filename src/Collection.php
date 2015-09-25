@@ -39,13 +39,15 @@ class Collection implements \Countable, Arrayable, Jsonable, \ArrayAccess, \Iter
      *
      * @return array
      */
-    public function all()
+    public function all()//TODO:change to accept an optional callback
     {
-        return $this->items;
+        return $this->items;// TODO:change to collection
     }
 
+    // TODO:add first and last similar to all
+
     /**
-     * Determine if an item exists in the collection, by key
+     * Determine if an item exists in the collection, by key.
      *
      * This is the object method equivalent of the magic isset($collection[$key]);
      *
@@ -185,7 +187,7 @@ class Collection implements \Countable, Arrayable, Jsonable, \ArrayAccess, \Iter
         $collection = [];
 
         foreach ($this->items as $key => $value) {
-            $partition = call_user_func($partitioner, $value, $key);
+            $partition = $partitioner($value, $key);
             if (is_scalar($partition)) {
                 $collection[$partition][$key] = $value;
             } else {

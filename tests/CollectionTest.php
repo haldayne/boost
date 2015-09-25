@@ -117,6 +117,7 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
             $x->toArray()
         );
 
+        // by key
         $c = new Collection(range(0, 3));
         $x = $c->partition(function ($value, $key) {
             return 0 === ($key % 2) ? 'even' : 'odd';
