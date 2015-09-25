@@ -1,6 +1,6 @@
 {
-    "name": "haldayne/data-structure",
-    "description": "Complements the Standard PHP Library with an assortment of common data structures.",
+    "name": "haldayne/boost",
+    "description": "Expansion pack for PHP string and array functions. Makes the common stuff easy & legible.",
     "license": "MIT",
     "authors": [
         {
@@ -8,12 +8,12 @@
         }
     ],
     "require": {
-        "php": "~5.5.0"
+        "php": "^5.5.0"
     },
     "autoload": {
         "classmap": [ "src" ],
         "psr-4": {
-            "Haldayne\\DataStructure\\": "src/"
+            "Haldayne\\Boost\\": "src/"
         }
     },
     "config": {
@@ -25,7 +25,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Haldayne\\DataStructure\\": "tests/"
+            "Haldayne\\Boost\\": "tests/"
         }
     }
 }
