@@ -80,7 +80,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * @param callable|string $code
      * @return Map
      */
-    public function all($code)
+    public function grep($code)
     {
         $map = new static();
         foreach ($this->array as $key => $value) {
