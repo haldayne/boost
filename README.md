@@ -41,12 +41,12 @@ Now we can use Map's fluent interface to solve real problems:
 
 # Related projects
 
-:alien: [Ardent, a Collections library for PHP.](https://github.com/morrisonlevi/Ardent)
+:alien: :heavy_minus_sign: [Ardent, a Collections library for PHP.](https://github.com/morrisonlevi/Ardent)
 
 > While developing and helping others develop PHP applications I noticed the trend to use PHP's arrays in nearly every task. Arrays in PHP are useful but are overused because PHP doesn't have rich standard libraries for working with common data structures and algorithms. This library hopes to fill in that gap. Undoubtably, I've made mistakes in design and implementation; hopefully more community involvement can help identify and fix such mistakes.
 
 
-:alien: [PHP Collection - Basic collections for PHP.](http://jmsyst.com/libs/PHP-Collection)
+:alien: :heavy_minus_sign: [PHP Collection - Basic collections for PHP.](http://jmsyst.com/libs/PHP-Collection)
 
 > Collections can be seen as more specialized arrays for which certain contracts are guaranteed.
 >
