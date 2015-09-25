@@ -37,6 +37,8 @@ Now we can use Map's fluent interface to solve real problems:
    * `Haldayne\Boost\MapOfTraversable`
    * `Haldayne\Boost\MapOfObject`
    * `Haldayne\Boost\MapOfMap`
+   * `Haldayne\Boost\MapOfResource`
+   * `Haldayne\Boost\MapOfCallable`
    * ... or create your own!
 
 # Related projects

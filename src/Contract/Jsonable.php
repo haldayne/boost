@@ -1,5 +1,5 @@
 <?php
-namespace Haldayne\DataStructure\Contract;
+namespace Haldayne\Boost\Contract;
 
 interface Jsonable
 {
