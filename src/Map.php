@@ -21,8 +21,8 @@ use Haldayne\Boost\Contract\Jsonable;
  *   - array
  *
  * In the API, a formal variable named `$code` must be either a callable or
- * a string representing actual PHP code. When giving strings, be mindful:
- * user-supplied string code is a security risk, and string code you right is
+ * a string representing actual PHP code. When giving a string, be mindful:
+ * user-supplied string code is a security risk, and string code you write is
  * checked only at run-time. Also, be mindful that these strings can contain
  * `$v` and `$k`, which represent the value and key being passed in.  Finally,
  * code that "fails" means it returns a PHP empty value: `''`, `0`, `0.0`,
@@ -30,20 +30,24 @@ use Haldayne\Boost\Contract\Jsonable;
  * it "passes".
  *
  * In the API, a formal variable named `$key` may be of *any* type.
+ *
+ * As much as possible, method names were chosen to reflect synonymous usage in
+ * the PHP engine itself. When not possible or relevant, the names may reflect
+ * usage from Laravel.
  */
 class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAggregate
 {
     /**
      * Should the comparison be made loosely?
-     * @see Collection::diff
-     * @see Collection::intersect
+     * @see Map::diff
+     * @see Map::intersect
      */
     const LOOSE = true;
 
     /**
      * Should the comparison be made strictly?
-     * @see Collection::diff
-     * @see Collection::intersect
+     * @see Map::diff
+     * @see Map::intersect
      */
     const STRICT = false;
 
@@ -51,17 +55,24 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * Create a new map.
      *
      * Initialize the map with the given collection, if any. Accepts any kind
-     * of collection: array, object, Traversable, another Map, etc.
+     * of collection: array, object, Traversable, another Map, etc. Optionally,
+     * wrap every key,value sets into the map with the given guard code: if the
+     * guard code fails, the set will throw an exception.
      *
      * @param Map|Arrayable|Jsonable|Traversable|object|array $collection
+     * @param callable $guard
      * @throws \InvalidArgumentException
      */
-    public function __construct($collection = null)
+    public function __construct($collection = null, callable $guard = null)
     {
-        if (null === $collection) {
-            $this->array = [];
-        } else {
-            $this->array = $this->collection_to_array($collection);
+        // set the guard first...
+        $this->guard = $guard;
+
+        // ... now add the given collection under supervision of that guard
+        if (null !== $collection) {
+            foreach ($this->collection_to_array($collection) as $key => $value) {
+                $this->offsetSet($key, $value);
+            }
         }
     }
 
@@ -74,24 +85,60 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      *
      * ```
      * $nums = new Map(range(0, 3));
-     * $odds = $m->all('return 1 == ($v % 2);');
+     * $odds = $m->find('return 1 == ($v % 2);');
      * ``` 
      *
      * @param callable|string $code
      * @return Map
      */
-    public function grep($code)
+    public function find($code)
     {
-        $map = new static();
-        foreach ($this->array as $key => $value) {
-            if ($this->passes($this->call($callable, $value, $key))) {
-                $map[$key] = $value;
-            }
-        }
-        return $map;
+        return $this->grep($code);
     }
 
-    // TODO:add first and last similar to all
+    /**
+     * Return a new map containing the first N elements matching the callable.
+     * 
+     * Like `grep`, but stop after finding N elements.
+     *
+     * ```
+     * $nums = new Map(range(0, 3));
+     * $odds = $m->all('return 1 == ($v % 2);');
+     * ``` 
+     *
+     * @param callable|string $code
+     * @param int $n
+     * @return Map
+     */
+    public function first($code, $n = 1)
+    {
+        if (intval($n) <= 0) {
+            throw new \InvalidArgumentException('whole number expected');
+        }
+        return $this->grep($code, $n);
+    }
+
+    /**
+     * Return a new map containing the last N elements matching the callable.
+     * 
+     * Like `grep`, but stop after finding N elements.
+     *
+     * ```
+     * $nums = new Map(range(0, 3));
+     * $odds = $m->all('return 1 == ($v % 2);');
+     * ``` 
+     *
+     * @param callable|string $code
+     * @param int $n
+     * @return Map
+     */
+    public function last($code, $n = 1)
+    {
+        if (intval($n) <= 0) {
+            throw new \InvalidArgumentException('whole number expected');
+        }
+        return $this->grep($code, -$n);
+    }
 
     /**
      * Determine if a key exists the map.
@@ -222,9 +269,29 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * @param callable|string $code
      * @return $this
      */
-    public function each($code)
+    public function walk($code)
     {
-        foreach ($this->array as $key => $value) {
+        foreach ($this->array as $hash => &$value) {
+            $key = $this->hash_to_key($hash);
+            if (! $this->passes($this->call($code, $value, $key))) {
+                break;
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * Like `walk`, except wakl from the end toward the front.
+     *
+     * @param callable|string $code
+     * @return $this
+     */
+    public function walk_backward($code)
+    {
+        $start = end($this->array);
+        for ($start; null !== ($hash = key($this->array)); prev($this->array)) {
+            $key   =  $this->hash_to_key($hash);
+            $value =& current($this->array);
             if (! $this->passes($this->call($code, $value, $key))) {
                 break;
             }
@@ -243,24 +310,23 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * code returns a non-scalar, it explodes.
      *
      * @param callable|string $code
-     * @return Map
+     * @return MapOfMaps
      * @throws \UnexpectedValueException
      */
     public function partition($code)
     {
-        $array = [];
-        foreach ($this->array as $key => $value) {
+        $outer = new MapOfMaps();
+        foreach ($this->array as $hash => $value) {
+            $key = $this->hash_to_key($hash);
             $partition = $this->call($code, $value, $key);
             if (is_scalar($partition)) {
-                if (! array_key_exists($partition, $array)) {
-                    $array[$partition] = new static;
-                }
-                $array[$partition]->set($key, $value);
+                $inner = $map->get($partition, new static());
+                $inner->set($key, $value);
             } else {
-                throw \UnexpectedValueException('code must return a scalar key');
+                throw new \UnexpectedValueException('code must return a scalar key');
             }
         }
-        return new static($array);
+        return $outer;
     }
 
     // ------------------------------------------------------------------------
@@ -334,13 +400,25 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * Set the value at a given key.
      *
      * If key is null, the value is appended to the array using numeric indexes.
+     * If the map was constructed with a set guard, then pass the value to the
+     * guard. If the guard fails, the set throws an exception.
      *
      * @param mixed $key
      * @param mixed $value
      * @return void
+     * @throws \UnexpectedValueException
      */
     public function offsetSet($key, $value)
     {
+        // check the value passes our guard, if a guard is defined
+        if (null !== $this->guard) {
+            $guard = $this->guard;
+            if (! $this->passes($guard($value))) {
+                throw new \UnexpectedValueException('value did not pass guard');
+            }
+        }
+
+        // set the value into our internal array
         if (null === $key) {
             // ask PHP to give me the next index
             // http://stackoverflow.com/q/3698743/2908724
@@ -389,6 +467,12 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * @var array
      */
     private $array = [];
+
+    /**
+     * The guard code protecting sets.
+     * @var callable|string|null
+     */
+    private $guard = null;
 
     /**
      * Track string code we've made into callables.
@@ -443,7 +527,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * @param string $key
      * @throws \InvalidArgumentException
      */
-    private function call($code, $value, $key)
+    private function call($code, &$value, $key)
     {
         $callable = $this->code_to_callable($code);
         return $callable($value, $key);
@@ -548,4 +632,55 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
             $hash
         ));
      }
+
+    /**
+     * Finds elements for which the given code passes, optionally limited to a
+     * maximum count.
+     *
+     * If limit is null, no limit on number of matches. If limit is positive,
+     * return that many from the front of the array. If limit is negative,
+     * return that many from the end of the array.
+     *
+     * @param callable|string $code
+     * @param int|null $limit
+     * @return Map
+     */
+    private function grep($code, $limit = null)
+    {
+        // initialize our return map and bookkeeping values
+        $map = new static([], $this->guard);
+        $cnt = 0;
+
+        // define a helper to check the values
+        $chk = function ($value, $hash) use ($code, $map, $limit, $cnt) {
+            $key = $this->hash_to_key($hash);
+            if ($this->passes($this->call($code, $value, $key))) {
+                $map->set($key, $value);
+                if ($limit < ++$cnt && null !== $limit) {
+                    return $map;
+                }
+            }
+        };
+
+        // walk the array in the right direction
+        if (0 <= intval($limit)) {
+            foreach ($this->array as $hash => $value)) {
+                if ($chk($value, $hash) instanceof Map) {
+                    return $map;
+                }
+            }
+
+        } else {
+            $start = end($this->array);
+            for ($start; null !== ($hash = key($this->array)); prev($this->array)) {
+                $value = current($this->array);
+                if ($chk($value, $hash) instanceof Map) {
+                    return $map;
+                }
+            }
+        }
+
+        return $map;
+    }
+
 }
