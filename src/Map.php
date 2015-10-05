@@ -24,10 +24,7 @@ use Haldayne\Boost\Contract\Jsonable;
  * a string representing actual PHP code. When giving a string, be mindful:
  * user-supplied string code is a security risk, and string code you write is
  * checked only at run-time. Also, be mindful that these strings can contain
- * `$v` and `$k`, which represent the value and key being passed in.  Finally,
- * code that "fails" means it returns a PHP empty value: `''`, `0`, `0.0`,
- * `'0'`, `null`, `false`, or `array ()`. If the code returns *any other value*
- * it "passes".
+ * `$v` and `$k`, which represent the value and key being passed in.
  *
  * In the API, a formal variable named `$key` may be of *any* type.
  *
@@ -112,10 +109,10 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     public function first($code, $n = 1)
     {
-        if (intval($n) <= 0) {
-            throw new \InvalidArgumentException('whole number expected');
+        if (is_numeric($n) && intval($n) <= 0) {
+            throw new \InvalidArgumentException('Whole number expected');
         }
-        return $this->grep($code, $n);
+        return $this->grep($code, intval($n));
     }
 
     /**
@@ -134,10 +131,10 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     public function last($code, $n = 1)
     {
-        if (intval($n) <= 0) {
-            throw new \InvalidArgumentException('whole number expected');
+        if (is_numeric($n) && intval($n) <= 0) {
+            throw new \InvalidArgumentException('Whole number expected');
         }
-        return $this->grep($code, -$n);
+        return $this->grep($code, -intval($n));
     }
 
     /**
@@ -256,9 +253,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * the value and then the key as formal parameters.
      *
      * The items are walked in the order they exist in the map. If the code
-     * fails, then the iteration halts. This means you must explicitly return a
-     * value, because otherwise PHP returns null which we interpret as failure.
-     * Note that values can be modified from the callback, but not keys.
+     * returns boolean false, then the iteration halts. Values can be modified
+     * from within the callback, but not keys.
      *
      * Example:
      * ```
@@ -281,16 +277,16 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     }
 
     /**
-     * Like `walk`, except wakl from the end toward the front.
+     * Like `walk`, except walk from the end toward the front.
      *
      * @param callable|string $code
      * @return $this
      */
     public function walk_backward($code)
     {
-        $start = end($this->array);
-        for ($start; null !== ($hash = key($this->array)); prev($this->array)) {
-            $key   =  $this->hash_to_key($hash);
+        for (end($this->array); null !== $hash; prev($this->array)) {
+            $hash  = key($this->array);
+            $key   = $this->hash_to_key($hash);
             $value =& current($this->array);
             if (! $this->passes($this->call($code, $value, $key))) {
                 break;
@@ -316,16 +312,18 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     public function partition($code)
     {
         $outer = new MapOfMaps();
-        foreach ($this->array as $hash => $value) {
-            $key = $this->hash_to_key($hash);
-            $partition = $this->call($code, $value, $key);
+        $inner_template = new static([], $this->guard);
+
+        $this->walk(function ($v, $k) use ($code, $outer, $inner_template) {
+            $partition = $this->call($code, $v, $k);
             if (is_scalar($partition)) {
-                $inner = $map->get($partition, new static());
-                $inner->set($key, $value);
+                $inner = $outer->get($partition, $inner_template);
+                $inner->set($k, $v);
             } else {
-                throw new \UnexpectedValueException('code must return a scalar key');
+                throw new \UnexpectedValueException('Partition code must return a scalar key');
             }
-        }
+        });
+
         return $outer;
     }
 
@@ -414,7 +412,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
         if (null !== $this->guard) {
             $guard = $this->guard;
             if (! $this->passes($guard($value))) {
-                throw new \UnexpectedValueException('value did not pass guard');
+                throw new \UnexpectedValueException('Value did not pass guard');
             }
         }
 
@@ -574,7 +572,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     private function passes($value)
     {
-        return true == $value;
+        return false === $value ? false : true;
     }
 
     /**
@@ -650,34 +648,25 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
         // initialize our return map and bookkeeping values
         $map = new static([], $this->guard);
         $cnt = 0;
+        $bnd = (null === $limit ? null : abs($limit));
 
-        // define a helper to check the values
-        $chk = function ($value, $hash) use ($code, $map, $limit, $cnt) {
-            $key = $this->hash_to_key($hash);
+        // define a helper add matching values to our new map, stopping when
+        // any designated limit is reached
+        $helper = function ($value, $key) use ($code, $map, $bnd, $cnt) {
             if ($this->passes($this->call($code, $value, $key))) {
                 $map->set($key, $value);
-                if ($limit < ++$cnt && null !== $limit) {
-                    return $map;
+                if (null !== $bnd && $bnd < ++$cnt) {
+                    return false;
                 }
             }
         };
 
         // walk the array in the right direction
-        if (0 <= intval($limit)) {
-            foreach ($this->array as $hash => $value)) {
-                if ($chk($value, $hash) instanceof Map) {
-                    return $map;
-                }
-            }
+        if (0 <= $limit) {
+            $this->walk($helper);
 
         } else {
-            $start = end($this->array);
-            for ($start; null !== ($hash = key($this->array)); prev($this->array)) {
-                $value = current($this->array);
-                if ($chk($value, $hash) instanceof Map) {
-                    return $map;
-                }
-            }
+            $this->walk_backward($helper);
         }
 
         return $map;
