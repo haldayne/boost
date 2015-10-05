@@ -9,7 +9,7 @@ Most PHP programming consists of data-pushing between a database and a browser, 
 
 You need at least PHP 5.5.0.  No other extensions are required.
 
-Install via composer: `php composer.phar require haldayne/boost *`
+Install via composer: `php composer.phar require haldayne/boost 1.0.x-dev`
 
 # Using Boost
 
