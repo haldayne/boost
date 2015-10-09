@@ -14,7 +14,10 @@
         "classmap": [ "src" ],
         "psr-4": {
             "Haldayne\\Boost\\": "src/"
-        }
+        },
+        "files": [
+            "src/functions/bytes.php"
+        ]
     },
     "extra": {
         "branch-alias": {
