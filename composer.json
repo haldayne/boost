@@ -16,7 +16,8 @@
             "Haldayne\\Boost\\": "src/"
         },
         "files": [
-            "src/functions/bytes.php"
+            "src/functions/bytes.php",
+            "src/functions/ini_size_to_bytes.php",
         ]
     },
     "extra": {
