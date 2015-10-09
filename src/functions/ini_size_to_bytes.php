@@ -16,6 +16,8 @@ namespace Haldayne\Boost;
  *   * Kilo-, Mega-, Giga-, and Tera-bytes expressed using single or double
  *     characters in either lower or upper case: "k", "kB", "G", "Pb", etc.
  *
+ * @param string $string A value from an `ini_get` call to process
+ * @return int Number of bytes the short-hand string represents
  * @see http://php.net/manual/en/faq.using.php#faq.using.shorthandbytes Documents the short-hand
  */
 function ini_size_to_bytes($string)
