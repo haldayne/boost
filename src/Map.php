@@ -138,6 +138,36 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     }
 
     /**
+     * Test if every element satisfies the callable.
+     *
+     * @bool
+     */
+    public function every($code)
+    {
+        return $this->grep($code)->count() === $this->count();
+    }
+
+    /**
+     * Test if at least one element satisfies the callable.
+     *
+     * @bool
+     */
+    public function some($code)
+    {
+        return 1 === $this->first($code)->count();
+    }
+
+    /**
+     * Test if no element satisifes the callable.
+     *
+     * @bool
+     */
+    public function none($code)
+    {
+        return 0 === $this->first($code)->count();
+    }
+
+    /**
      * Determine if a key exists the map.
      *
      * This is the object method equivalent of the magic isset($map[$key]);
@@ -650,7 +680,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
         $cnt = 0;
         $bnd = (null === $limit ? null : abs($limit));
 
-        // define a helper add matching values to our new map, stopping when
+        // define a helper to add matching values to our new map, stopping when
         // any designated limit is reached
         $helper = function ($value, $key) use ($code, $map, $bnd, $cnt) {
             if ($this->passes($this->call($code, $value, $key))) {
