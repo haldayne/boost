@@ -22,6 +22,6 @@ class MapOfMaps extends Map
      */
     public function guard($value)
     {
-        return $value instanceof Guard;
+        return $value instanceof Map;
     }
 }
