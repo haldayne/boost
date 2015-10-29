@@ -3,6 +3,7 @@ namespace Haldayne\Boost;
 
 use Haldayne\Boost\Contract\Arrayable;
 use Haldayne\Boost\Contract\Jsonable;
+use Haldayne\Boost\Callable;
 
 /**
  * An improvement on PHP associative arrays.
@@ -20,11 +21,17 @@ use Haldayne\Boost\Contract\Jsonable;
  *   - object
  *   - array
  *
- * In the API, a formal variable named `$code` must be either a callable or
- * a string representing actual PHP code. When giving a string, be mindful:
- * user-supplied string code is a security risk, and string code you write is
- * checked only at run-time. Also, be mindful that these strings can contain
- * `$v` and `$k`, which represent the value and key being passed in.
+ * Many of these methods allow you to apply code to all elements of the map:
+ * look for formal parameters named `$code` or `$expression`. Some will allow
+ * `callable`, which are the usual PHP callable types. Some will allow for
+ * both `callable` *and* `string`.
+ *
+ * When given as string, an anonymous function is built for you, using the
+ * string as the meat of the function. This lets you write extremely compact
+ * expressions for filtering, at the one-time cost of converting the string
+ * to the body of an anonymous function.  Inside these anonymous functions
+ * the variable `$_0` holds the current value, while $_1 holds the current
+ * key.
  *
  * In the API, a formal variable named `$key` may be of *any* type.
  *
@@ -74,97 +81,105 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     }
 
     /**
-     * Return a new map containing only members of this map that pass the callable.
+     * Return a new map containing only members of this map that pass the
+     * expression.
      * 
-     * An all-purpose "grep". You give a function deciding whether an element is
-     * in or out, and this returns a new map of those that are in. Ex, find the
-     * odd numbers:
+     * You give an expression deciding whether an element is in or out, and
+     * this returns a new map of those that are in. Ex, find both the odd and
+     * even numbers:
      *
      * ```
-     * $nums = new Map(range(0, 3));
-     * $odds = $m->find('return 1 == ($v % 2);');
-     * ``` 
+     * $nums = new Map(range(0, 9));
+     * $even = $nums->find(function ($val, $key) { return 0 == $val % 2; });
+     * $odds = $nums->find('1 == ($_0 % 2)');
+     * ```
      *
-     * @param callable|string $code
+     * @param callable|string $expression
      * @return Map
      */
-    public function find($code)
+    public function find($expression)
     {
         return $this->grep($code);
     }
 
     /**
-     * Return a new map containing the first N elements matching the callable.
+     * Return a new map containing the first N elements passing the
+     * expression.
      * 
-     * Like `grep`, but stop after finding N elements.
+     * Like `find`, but stop after finding N elements from the front. Defaults
+     * to N = 1.
      *
      * ```
-     * $nums = new Map(range(0, 3));
-     * $odds = $m->all('return 1 == ($v % 2);');
+     * $nums = new Map(range(0, 9));
+     * $odd3 = $nums->first('1 == ($_0 % 2)', 3); // first three odds
      * ``` 
      *
-     * @param callable|string $code
+     * @param callable|string $expression
      * @param int $n
      * @return Map
      */
-    public function first($code, $n = 1)
+    public function first($expression, $n = 1)
     {
         if (is_numeric($n) && intval($n) <= 0) {
-            throw new \InvalidArgumentException('Whole number expected');
+            throw new \InvalidArgumentException('Argument $n must be whole number');
         }
-        return $this->grep($code, intval($n));
+        return $this->grep($expression, intval($n));
     }
 
     /**
-     * Return a new map containing the last N elements matching the callable.
+     * Return a new map containing the last N elements passing the expression.
      * 
-     * Like `grep`, but stop after finding N elements.
+     * Like `first`, but stop after finding N elements from the *end*.
+     * Defaults to N = 1.
      *
      * ```
-     * $nums = new Map(range(0, 3));
-     * $odds = $m->all('return 1 == ($v % 2);');
+     * $nums = new Map(range(0, 9));
+     * $odds = $nums->last('1 == ($_0 % 2)', 2); // last two odd numbers
      * ``` 
      *
-     * @param callable|string $code
+     * @param callable|string $expression
      * @param int $n
      * @return Map
      */
-    public function last($code, $n = 1)
+    public function last($expression, $n = 1)
     {
         if (is_numeric($n) && intval($n) <= 0) {
-            throw new \InvalidArgumentException('Whole number expected');
+            throw new \InvalidArgumentException('Argument $n must be whole number');
         }
-        return $this->grep($code, -intval($n));
+        return $this->grep($expression, -intval($n));
     }
 
     /**
-     * Test if every element satisfies the callable.
+     * Test if every element passes the expression.
      *
+     * @param callable|string $expression
      * @bool
      */
-    public function every($code)
+    public function every($expression)
     {
-        return $this->grep($code)->count() === $this->count();
+        return $this->grep($expression)->count() === $this->count();
     }
 
     /**
-     * Test if at least one element satisfies the callable.
+     * Test if at least one element passes the expression.
      *
+     * @param callable|string $expression
      * @bool
      */
-    public function some($code)
+    public function some($expression)
     {
-        return 1 === $this->first($code)->count();
+        return 1 === $this->first($expression)->count();
     }
 
     /**
-     * Test if no element satisifes the callable.
+     * Test that no elements pass the expression.
      *
+     * @param callable|string $expression
      * @bool
      */
-    public function none($code)
+    public function none($expression)
     {
-        return 0 === $this->first($code)->count();
+        return 0 === $this->first($expression)->count();
     }
 
     /**
@@ -289,13 +304,12 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * Example:
      * ```
      * $map->each(function (&$value, $key) { $value++; return true; })->sum();
-     * $map->each('$v++; return true;')->sum();
      * ```
      *
-     * @param callable|string $code
+     * @param callable $code
      * @return $this
      */
-    public function walk($code)
+    public function walk(callable $code)
     {
         foreach ($this->array as $hash => &$value) {
             $key = $this->hash_to_key($hash);
@@ -309,10 +323,10 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     /**
      * Like `walk`, except walk from the end toward the front.
      *
-     * @param callable|string $code
+     * @param callable $code
      * @return $this
      */
-    public function walk_backward($code)
+    public function walk_backward(callable $code)
     {
         for (end($this->array); null !== $hash; prev($this->array)) {
             $hash  = key($this->array);
@@ -333,13 +347,24 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * The code is called for each item in the map. The code receives the value
      * and key, respectively.  The code may return a scalar key and that scalar
      * becomes the key for a new map, into which that element is placed. If the
-     * code returns a non-scalar, it explodes.
+     * code returns a non-scalar, an exception is thrown.
      *
-     * @param callable|string $code
+     * ```
+     * $nums = new Map(range(0, 9));
+     * $part = $nums->partition(function ($value, $key) {
+     *    return 0 == $value % 2 ? 'even' : 'odd';
+     * });
+     * var_dump(
+     *     $part['odd']->count(), // 5
+     *     $part['even']->sum() // 20
+     * );
+     * ```
+     *
+     * @param callable $code
      * @return MapOfMaps
      * @throws \UnexpectedValueException
      */
-    public function partition($code)
+    public function partition(callable $code)
     {
         $outer = new MapOfMaps();
         $inner_template = new static([], $this->guard);
@@ -503,12 +528,6 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     private $guard = null;
 
     /**
-     * Track string code we've made into callables.
-     * @var array
-     */
-    private $map_code_to_callable = [];
-
-    /**
      * Track hashes we've created for non-string keys.
      * @var array
      */
@@ -557,41 +576,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     private function call($code, &$value, $key)
     {
-        $callable = $this->code_to_callable($code);
+        $callable = Lambda\Factory::fromExpression($code);
         return $callable($value, $key);
-    }
-
-    /**
-     * Return a callable from the given code, if possible.
-     *
-     * When you give a callable, this returns immediately. When you give a
-     * string, caches and returns an anonymous function created from that 
-     * string code. Otherwise, it explodes.
-     *
-     * If given a string, then the value is passed in by-reference, allowing
-     * that code to update the value.  Updating keys would induce undefined
-     * behavior on iterations, so we don't allow that.
-     *
-     * @param callable|string $code
-     * @throws \InvalidArgumentException
-     */
-    private function code_to_callable($code)
-    {
-        if (is_callable($code)) {
-            return $code;
-
-        } else if (is_string($code)) {
-            if (! array_key_exists($code, $this->map_code_to_callable)) {
-                $this->map_code_to_callable[$code] = create_function('&$v,$k', $code);
-            }
-            return $this->map_code_to_callable[$code];
-
-        } else {
-            throw new \InvalidArgumentException(sprintf(
-                'Thing of type %s not callable-like',
-                gettype($code)
-            ));
-        }
     }
 
     /**
@@ -701,5 +687,4 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
 
         return $map;
     }
-
 }

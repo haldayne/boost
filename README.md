@@ -28,7 +28,7 @@ Now we can use Map's fluent interface to solve real problems:
    * partition (aka group by)
    * ... and more
 * throw-away callables until PHP supports short closures
-   * `$numbers->grep('return $v % 2;')` vs.
+   * `$numbers->grep('$v % 2')` vs.
      `$numbers->grep(function ($v) { return $v % 2; })`
 * enforce "Array of Type" type hinting:
    * `Haldayne\Boost\MapOfBoolean`
