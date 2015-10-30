@@ -3,7 +3,7 @@ namespace Haldayne\Boost;
 
 use Haldayne\Boost\Contract\Arrayable;
 use Haldayne\Boost\Contract\Jsonable;
-use Haldayne\Boost\Callable;
+use Haldayne\Boost\Lambda;
 
 /**
  * An improvement on PHP associative arrays.
@@ -380,6 +380,36 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
         });
 
         return $outer;
+    }
+
+    /**
+     * Treat the map as a stack and push an element onto its end.
+     *
+     * @return $this
+     */
+    public function push($element)
+    {
+        $this->offsetSet(null, $element);
+        return $this;
+    }
+
+    /**
+     * Treat the map as a stack and pop an element off its end.
+     *
+     * @return mixed
+     */
+    public function pop()
+    {
+        // get last key of array
+        end($this->array);
+        $key = key($this->array);
+
+        // destructively get the element there
+        $element = $this->array[$key];
+        unset($this->array[$key]);
+
+        // return it
+        return $element;
     }
 
     // ------------------------------------------------------------------------
