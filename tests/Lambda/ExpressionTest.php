@@ -1,14 +1,14 @@
 <?php
 namespace Haldayne\Boost\Lambda;
 
-class FactoryTest extends \PHPUnit_Framework_TestCase
+class ExpressionTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * @dataProvider provides_expressions_and_io
      */
-    public function test_from_expression($expression, array $input, $output)
+    public function test_execution($expression, array $input, $output)
     {
-        $fn = Factory::fromExpression($expression);
+        $fn = new Expression($expression);
         $this->assertSame($output, call_user_func_array($fn, $input));
     }
 
@@ -16,9 +16,17 @@ class FactoryTest extends \PHPUnit_Framework_TestCase
      * @dataProvider provides_invalid_expressions
      * @expectedException \InvalidArgumentException
      */
-    public function test_from_expression_throws_invalidargument($expression)
+    public function test_throws_invalidargument($expression)
     {
-        Factory::fromExpression($expression);
+        new Expression($expression);
+    }
+
+    public function test_caching()
+    {
+        $e = '$_0 < $_1';
+        $x = new Expression($e); // different objects w/ same expression...
+        $y = new Expression($e); // ... should have same callable
+        $this->assertSame($x->getCallable(), $y->getCallable());
     }
 
     // -=-= Data Provider =-=-

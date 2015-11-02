@@ -3,7 +3,7 @@ namespace Haldayne\Boost;
 
 use Haldayne\Boost\Contract\Arrayable;
 use Haldayne\Boost\Contract\Jsonable;
-use Haldayne\Boost\Lambda;
+use Haldayne\Boost\Lambda\Expression;
 
 /**
  * An improvement on PHP associative arrays.
@@ -74,9 +74,17 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
 
         // ... now add the given collection under supervision of that guard
         if (null !== $collection) {
-            foreach ($this->collection_to_array($collection) as $key => $value) {
-                $this->offsetSet($key, $value);
+            $array = $this->collection_to_array($collection);
+            if (false === $array) {
+                throw new \InvalidArgumentException(sprintf(
+                    '$collection has type %s, which is not collection-like',
+                    gettype($collection)
+                ));
             }
+            array_walk(
+                $array,
+                function ($v, $k) { $this->offsetSet($k, $v); }
+            );
         }
     }
 
@@ -99,7 +107,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     public function find($expression)
     {
-        return $this->grep($code);
+        return $this->grep($expression);
     }
 
     /**
@@ -190,7 +198,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * @param mixed $key
      * @return bool
      */
-    public function contains($key)
+    public function has($key)
     {
         return $this->offsetExists($key);
     }
@@ -269,7 +277,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     {
         $func = ($comparison === Map::LOOSE ? 'array_diff' : 'array_diff_assoc');
         return new static(
-            $func($this->array, $this->collection_to_array($collection))
+            $func($this->toArray(), $this->collection_to_array($collection))
         );
     }
 
@@ -289,7 +297,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     {
         $func = ($comparison === Map::LOOSE ? 'array_intersect' : 'array_intersect_assoc');
         return new static(
-            $func($this->array, $this->collection_to_array($collection))
+            $func($this->toArray(), $this->collection_to_array($collection))
         );
     }
 
@@ -340,14 +348,12 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     }
 
     /**
-     * Returns a new map, where elements from this map have been placed into 
-     * new map elements. The return value of the code determines the key for
-     * each new bucket.
+     * Groups elements of this map based on the result of an expression.
      *
-     * The code is called for each item in the map. The code receives the value
-     * and key, respectively.  The code may return a scalar key and that scalar
-     * becomes the key for a new map, into which that element is placed. If the
-     * code returns a non-scalar, an exception is thrown.
+     * Calls the expression for each element in this map. The expression
+     * receives the value and key, respectively.  The expression may return
+     * any value: this value is the grouping key and the element is put into
+     * that group.
      *
      * ```
      * $nums = new Map(range(0, 9));
@@ -360,23 +366,21 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * );
      * ```
      *
-     * @param callable $code
+     * @param callable|string $expression
      * @return MapOfMaps
-     * @throws \UnexpectedValueException
      */
-    public function partition(callable $code)
+    public function partition($expression)
     {
         $outer = new MapOfMaps();
-        $inner_template = new static([], $this->guard);
+        $proto = new static([], $this->guard);
 
-        $this->walk(function ($v, $k) use ($code, $outer, $inner_template) {
-            $partition = $this->call($code, $v, $k);
-            if (is_scalar($partition)) {
-                $inner = $outer->get($partition, $inner_template);
-                $inner->set($k, $v);
-            } else {
-                throw new \UnexpectedValueException('Partition code must return a scalar key');
-            }
+        $this->walk(function ($v, $k) use ($expression, $outer, $proto) {
+            $partition = $this->call($expression, $v, $k);
+
+            $inner = $outer->has($partition) ? $outer->get($partition) : clone $proto;
+            $inner->set($k, $v);
+
+            $outer->set($partition, $inner);
         });
 
         return $outer;
@@ -402,11 +406,11 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     {
         // get last key of array
         end($this->array);
-        $key = key($this->array);
+        $hash = key($this->array);
 
         // destructively get the element there
-        $element = $this->array[$key];
-        unset($this->array[$key]);
+        $element = $this->array[$hash];
+        unset($this->array[$hash]);
 
         // return it
         return $element;
@@ -434,11 +438,13 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     public function toArray()
     {
-        $array = [];
-        foreach ($this->array as $key => $value) {
-            $array[$key] = $this->collection_to_array($value);
+        $outer = [];
+        foreach ($this->array as $hash => $value) {
+            $key   = $this->hash_to_key($hash);
+            $inner = $this->collection_to_array($value);
+            $outer[$key] = (false === $inner ? $value : $inner);
         }
-        return $array;
+        return $outer;
     }
 
     // ------------------------------------------------------------------------
@@ -525,7 +531,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     public function offsetUnset($key)
     {
-        unset($this->array[$key]);
+        unset($this->array[$this->key_to_hash($key)]);
     }
 
     // ------------------------------------------------------------------------
@@ -568,8 +574,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * structure is given.
      *
      * @param Map|Traversable|Arrayable|Jsonable|object|array $items
-     * @return array
-     * @throws \InvalidArgumentException
+     * @return array|boolean
      */
     private function collection_to_array($collection)
     {
@@ -589,24 +594,21 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
             return (array)$collection;
 
         } else {
-            throw new \InvalidArgumentException(sprintf(
-                'Thing of type %s not collection-like',
-                gettype($collection)
-            ));
+            return false;
         }
     }
 
     /**
      * Calls the given code with the given value and key as first & second argument.
      * 
-     * @param callable|string $code
+     * @param callable|string $expression
      * @param mixed $value
      * @param string $key
      * @throws \InvalidArgumentException
      */
-    private function call($code, &$value, $key)
+    private function call($expression, &$value, $key)
     {
-        $callable = Lambda\Factory::fromExpression($code);
+        $callable = new Expression($expression);
         return $callable($value, $key);
     }
 
@@ -627,6 +629,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      *
      * @param mixed $key
      * @return string
+     * @throws \InvalidArgumentException
      */
     private function key_to_hash($key)
     {
@@ -634,23 +637,26 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
             return $this->map_key_to_hash[$key];
         }
 
-        if (is_object($key)) {
-            $hash = spl_object_hash($key);
-
-        } else if (is_numeric($key) || is_bool($key)) {
-            $hash = 's_' . intval($key);
+        if (is_float($key) || is_int($key) || is_bool($key)) {
+            $hash = intval($key);
 
         } else if (is_string($key)) {
             $hash = "s_$key";
 
-        } else if (is_resource($key)) {
-            $hash = "r_$key";
+        } else if (is_object($key) || is_callable($key)) {
+            $hash = spl_object_hash($key);
 
         } else if (is_array($key)) {
             $hash = 'a_' . md5(json_encode($key));
 
+        } else if (is_resource($key)) {
+            $hash = "r_$key";
+
         } else {
-            return '0';
+            throw new \InvalidArgumentException(
+                'Key has type %s, which is not supported',
+                gettype($key)
+            );
         }
 
         $this->map_key_to_hash[$key] = $hash;
@@ -685,11 +691,11 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * return that many from the front of the array. If limit is negative,
      * return that many from the end of the array.
      *
-     * @param callable|string $code
+     * @param callable|string $expression
      * @param int|null $limit
      * @return Map
      */
-    private function grep($code, $limit = null)
+    private function grep($expression, $limit = null)
     {
         // initialize our return map and bookkeeping values
         $map = new static([], $this->guard);
@@ -698,8 +704,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
 
         // define a helper to add matching values to our new map, stopping when
         // any designated limit is reached
-        $helper = function ($value, $key) use ($code, $map, $bnd, $cnt) {
-            if ($this->passes($this->call($code, $value, $key))) {
+        $helper = function ($value, $key) use ($expression, $map, $bnd, $cnt) {
+            if ($this->passes($this->call($expression, $value, $key))) {
                 $map->set($key, $value);
                 if (null !== $bnd && $bnd < ++$cnt) {
                     return false;

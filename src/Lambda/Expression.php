@@ -11,23 +11,26 @@ namespace Haldayne\Boost\Lambda;
  * run:
  *
  * ```
- * uasort($array, '$_0 <=> $_1');
- * // vs.
  * uasort($array, function ($a, $b) { return $a <=> $b; });
+ * // vs. an ideal expression
+ * uasort($array, '$_0 <=> $_1');
  * ```
  *
- * This class makes possible wrapping expressions in anonymous functions in a
+ * This class wraps string-based code expressions in anonymous functions in a
  * reasonably performant manner. Libraries wanting to support concise
  * expressions as arguments to their functions can then use this class to
  * produce that effect:
  *
  * ```
- * use Haldayne\Boost\Lambda\Factory;
+ * use Haldayne\Boost\Lambda\Expression;
  * class Collection {
- *     // callable|string $expression
+ *     public function __construct(array $items) {
+ *         $this->items = $items;
+ *     }
+ *     // @param callable|string $expression
  *     public function filter($expression) {
- *         $fn = Factory::fromExpression($expression);
- *         return $this->filterByCallable($fn);
+ *         $fn = new Expression($expression);
+ *         return array_filter($this->items, $fn);
  *     }
  * }
  *
@@ -46,7 +49,7 @@ namespace Haldayne\Boost\Lambda;
  * @see http://docs.hhvm.com/manual/en/hack.lambda.php
  * @see https://linepogl.wordpress.com/2011/08/04/short-closures-for-php-an-implementation/
  */
-class Factory
+class Expression
 {
     /**
      * Creates a callable returning the given expression.
@@ -54,10 +57,10 @@ class Factory
      * If the expression is already callable, returns it untouched. If the
      * expression is a string, a closure will be wrapped around the string
      * returning it as a single line. In this case, the first nine positional
-     * arguments are available as $_0, $_1, ... $_9.
+     * arguments are available as $_0, $_1, ..., $_9.
      *
      * ```
-     * $lt = Factory::fromExpression('$_0 < $_1');
+     * $lt = new Expression('$_0 < $_1');
      * var_dump($lt(0, 1)); // true
      * var_dump($lt(1, 0)); // false
      * var_dump($lt());     // false (null not less than null)
@@ -67,20 +70,13 @@ class Factory
      * @param callable|string $expression
      * @throws \InvalidArgumentException When $expression not of expected type
      */
-    public static function fromExpression($expression)
+    public function __construct($expression)
     {
         if (is_callable($expression)) {
-            return $expression;
-
+            $this->callable = $expression;
+        
         } else if (is_string($expression)) {
-            if (! array_key_exists($expression, static::$map)) {
-                static::$map[$expression] = create_function(
-                    '$_0=null, $_1=null, $_2=null, $_3=null, $_4=null,' .
-                    '$_5=null, $_6=null, $_7=null, $_8=null, $_9=null ' ,
-                    'return (' . $expression . ');'
-                );
-            }
-            return static::$map[$expression];
+            $this->callable = static::makeCallable($expression);
 
         } else {
             throw new \InvalidArgumentException(sprintf(
@@ -90,7 +86,33 @@ class Factory
         }
     }
 
+    public function __invoke()
+    {
+        return call_user_func_array($this->callable, func_get_args());
+    }
+
+    /**
+     * Get the callable manufactured for this expression.
+     *
+     * @return callable
+     */
+    public function getCallable()
+    {
+        return $this->callable;
+    }
+
     // PRIVATE API
 
     private static $map = [];
+    private static function makeCallable($expression)
+    {
+        if (! array_key_exists($expression, static::$map)) {
+            static::$map[$expression] = create_function(
+                '$_0=null, $_1=null, $_2=null, $_3=null, $_4=null,' .
+                '$_5=null, $_6=null, $_7=null, $_8=null, $_9=null ' ,
+                'return (' . $expression . ');'
+            );
+        }
+        return static::$map[$expression];
+    }
 }
