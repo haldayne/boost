@@ -18,6 +18,15 @@ class MapTest extends \PHPUnit_Framework_TestCase
         new Map($collection);
     }
 
+    public function test_sets()
+    {
+        $nums = new Map();
+        $nums->set(242, 0);
+        $nums->push(1);
+        $nums[] = 2;
+        $this->assertSame([ 242 => 0, 243 => 1, 244 => 2], $nums->toArray());
+    }
+
     public function test_has_get_set_forget()
     {
         $c = new Map([ 'a', 'b', 'c' ]);
@@ -213,6 +222,34 @@ class MapTest extends \PHPUnit_Framework_TestCase
         $popped = $nums->pop();
         $this->assertSame(0, $nums->count());
         $this->assertSame($num, $popped);
+    }
+
+    public function test_guard_valid()
+    {
+        $nums = new Map([], function ($v) { return is_int($v); });
+        $nums->set(0, 0);
+        $nums->push(1);
+        $nums[] = 2;
+        $this->assertSame([ 0, 1, 2 ], $nums->toArray());
+    }
+
+    public function test_guard_invalid()
+    {
+        $nums = new Map([], function ($v) { return is_int($v); });
+        $attempts = [
+            'set'    => function ($nums) { $nums->set(0, 'a'); },
+            'push'   => function ($nums) { $nums->push('b'); },
+            'append' => function ($nums) { $nums[] = 'c'; },
+        ];
+        foreach ($attempts as $method => $attempt) {
+            try {
+                $attempt($nums);
+                $this->fail("Should not be able to $method into this map");
+            } catch (\UnexpectedValueException $ex) {
+            } catch (\Exception $ex) {
+                $this->fail('Guard threw unexpected exception');
+            }
+        }
     }
 
     // tests for implements \Countable

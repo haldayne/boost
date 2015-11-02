@@ -59,9 +59,13 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * Create a new map.
      *
      * Initialize the map with the given collection, if any. Accepts any kind
-     * of collection: array, object, Traversable, another Map, etc. Optionally,
-     * wrap every key,value sets into the map with the given guard code: if the
-     * guard code fails, the set will throw an exception.
+     * of collection: array, object, Traversable, another Map, etc.
+     *
+     * Optionally, protect all `set`-like operations (`set`, `['foo']`, 
+     * `push`, etc) with a guard callable. The guard callable receives the
+     * proposed value as its first argument. If the guard returns boolean
+     * `false`, an exception will be raised, otherwise the value will be set
+     * into the map.
      *
      * @param Map|Arrayable|Jsonable|Traversable|object|array $collection
      * @param callable $guard
@@ -361,7 +365,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * });
      * var_dump(
      *     $part['odd']->count(), // 5
-     *     $part['even']->sum() // 20
+     *     array_sum($part['even']->toArray()) // 20
      * );
      * ```
      *
@@ -511,6 +515,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
             // ask PHP to give me the next index
             // http://stackoverflow.com/q/3698743/2908724
             $this->array[] = 'probe';
+            end($this->array);
             $next = key($this->array);
             unset($this->array[$next]);
 
@@ -677,7 +682,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
         }
 
         throw new \OutOfBoundsException(sprintf(
-            'Hash %s hash not been created',
+            'Hash "%s" has not been created',
             $hash
         ));
      }
