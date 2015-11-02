@@ -124,6 +124,97 @@ class MapTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    public function test_find()
+    {
+        $nums = new Map(range(0, 9));
+        $even = $nums->find(function ($val, $key) { return 0 == $val % 2; });
+        $odds = $nums->find('1 == ($_0 % 2)');
+        $this->assertSame(
+            array_combine([ 0, 2, 4, 6, 8 ], [ 0, 2, 4, 6, 8 ]),
+            $even->toArray()
+        );
+        $this->assertSame(
+            array_combine([ 1, 3, 5, 7, 9 ], [ 1, 3, 5, 7, 9 ]),
+            $odds->toArray()
+        );
+    }
+
+    public function test_first()
+    {
+        $nums = new Map(range(0, 9));
+
+        // first proper
+        $mod4 = $nums->first('1 === $_0 % 4');
+        $this->assertSame(1, $mod4->count());
+        $this->assertSame([ 1 => 1 ], $mod4->toArray());
+
+        // first 2 (which is neither first nor equal to # of elements)
+        $mod4 = $nums->first('1 === $_0 % 4', 2);
+        $this->assertSame(2, $mod4->count());
+        $this->assertSame([ 1 => 1, 5 => 5 ], $mod4->toArray());
+
+        // first 3 (which is exactly equal to # of elements)
+        $mod4 = $nums->first('1 === $_0 % 4', 3);
+        $this->assertSame(3, $mod4->count());
+        $this->assertSame([ 1 => 1, 5 => 5, 9 => 9 ], $mod4->toArray());
+
+        // first 4 (which is more than # of elements)
+        $mod4 = $nums->first('1 === $_0 % 4', 4);
+        $this->assertSame(3, $mod4->count());
+        $this->assertSame([ 1 => 1, 5 => 5, 9 => 9 ], $mod4->toArray());
+    }
+
+    public function test_last()
+    {
+        $nums = new Map(range(0, 9));
+
+        // last proper
+        $mod4 = $nums->last('1 === $_0 % 4');
+        $this->assertSame(1, $mod4->count());
+        $this->assertSame([ 9 => 9 ], $mod4->toArray());
+
+        // last 2 (which is neither last nor equal to # of elements)
+        $mod4 = $nums->last('1 === $_0 % 4', 2);
+        $this->assertSame(2, $mod4->count());
+        $this->assertSame([ 9 => 9, 5 => 5 ], $mod4->toArray());
+
+        // last 3 (which is exactly equal to # of elements)
+        $mod4 = $nums->last('1 === $_0 % 4', 3);
+        $this->assertSame(3, $mod4->count());
+        $this->assertSame([ 9 => 9, 5 => 5, 1 => 1 ], $mod4->toArray());
+
+        // last 4 (which is more than # of elements)
+        $mod4 = $nums->last('1 === $_0 % 4', 4);
+        $this->assertSame(3, $mod4->count());
+        $this->assertSame([ 9 => 9, 5 => 5, 1 => 1 ], $mod4->toArray());
+    }
+
+    public function test_every_some_none()
+    {
+        $nums = new Map(range(0, 9));
+        $this->assertTrue(
+            $nums->every('is_int($_0) && is_int($_1)')
+        );
+        $this->assertTrue(
+            $nums->some('0 === $_0 % 2')
+        );
+        $this->assertTrue(
+            $nums->none('$_0 < 0')
+        );
+    }
+
+    public function test_push_pop()
+    {
+        $num = rand();
+
+        $nums = new Map();
+        $nums->push($num);
+        $this->assertSame(1, $nums->count());
+        $popped = $nums->pop();
+        $this->assertSame(0, $nums->count());
+        $this->assertSame($num, $popped);
+    }
+
     // tests for implements \Countable
 
     /** @dataProvider provides_valid_collection */

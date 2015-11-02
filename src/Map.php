@@ -336,8 +336,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     public function walk_backward(callable $code)
     {
-        for (end($this->array); null !== $hash; prev($this->array)) {
-            $hash  = key($this->array);
+        for (end($this->array); null !== ($hash = key($this->array)); prev($this->array)) {
             $key   = $this->hash_to_key($hash);
             $value =& current($this->array);
             if (! $this->passes($this->call($code, $value, $key))) {
@@ -699,15 +698,15 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     {
         // initialize our return map and bookkeeping values
         $map = new static([], $this->guard);
+        $bnd = empty($limit) ? null : abs($limit);
         $cnt = 0;
-        $bnd = (null === $limit ? null : abs($limit));
 
         // define a helper to add matching values to our new map, stopping when
         // any designated limit is reached
-        $helper = function ($value, $key) use ($expression, $map, $bnd, $cnt) {
+        $helper = function ($value, $key) use ($expression, $map, $bnd, &$cnt) {
             if ($this->passes($this->call($expression, $value, $key))) {
                 $map->set($key, $value);
-                if (null !== $bnd && $bnd < ++$cnt) {
+                if (null !== $bnd && $bnd <= ++$cnt) {
                     return false;
                 }
             }
