@@ -252,6 +252,16 @@ class MapTest extends \PHPUnit_Framework_TestCase
         }
     }
 
+    public function test_rekey()
+    {
+        $freq = new Map(count_chars('madam im adam', 1));
+        $lets = $freq->rekey('chr($_1)');
+        $this->assertSame(
+            [ ' ' => 2, 'a' => 4, 'd' => 2, 'i' => 1, 'm' => 4 ],
+            $lets->toArray()
+        );
+    }
+
     // tests for implements \Countable
 
     /** @dataProvider provides_valid_collection */

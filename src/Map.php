@@ -307,7 +307,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
 
     /**
      * Execute the given code over each element of the map. The code receives
-     * the value and then the key as formal parameters.
+     * the value by reference and then the key as formal parameters.
      *
      * The items are walked in the order they exist in the map. If the code
      * returns boolean false, then the iteration halts. Values can be modified
@@ -387,6 +387,127 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
         });
 
         return $outer;
+    }
+
+    /**
+     * Walk the map, applying the expression to every element, transforming
+     * them into a new map.
+     *
+     * ```
+     * $nums = new Map(range(0, 9));
+     * $doubles = $nums->map('$_0 * 2');
+     * ```
+     *
+     * The expression receives two arguments:
+     *   - The current value
+     *   - The current key
+     *
+     * The keys in the resulting map will be the same as the keys in the 
+     * original map: only the values have (potentially) changed.
+     *
+     * @param callable|string $expression
+     * @return static
+     */
+    public function map($expression)
+    {
+        $new = new static();
+
+        $this->walk(function ($v, $k) use ($expression, $new) {
+            $new[$k] = $this->call($expression, $v, $k);
+        });
+
+        return $new;
+    }
+
+    /**
+     * Walk the map, applying the expression to every element, so as to reduce
+     * them to a single value.
+     *
+     * The expression receives three arguments:
+     *   - The current reduction
+     *   - The current value
+     *   - The current key
+     * 
+     * The first time the expression is called, the current reduction is the
+     * given initial value.
+     *
+     * ```
+     * $nums = new Map(range(0, 3));
+     * $sum = $nums->reduce(function ($sum, $value) { return $sum + $value; });
+     * // $sum == 6
+     * ```
+     *
+     * If $final is given and a callable expression, call it as the last
+     * step after reducing the map.
+     *
+     * @param callable|string $expression
+     * @param mixed $initial
+     * @param callable|null $final
+     * @return mixed
+     *
+     * @see http://php.net/manual/en/function.array-reduce.php
+     */
+    public function reduce($expression, $initial = null, callable $final = null)
+    {
+        $reduced = $initial;
+        $this->walk(function ($v, $k) use ($expression, &$reduced) {
+            $reduced = $this->call($expression, $reduced, $v, $k);
+        });
+
+        return is_callable($final) ? $final($reduced) : $reduced;
+    }
+
+    /**
+     * Apply the filter to every element, creating a new map with only those
+     * elements from the original map that do not fail this filter.
+     *
+     * The filter expressions receives two arguments:
+     *   - The current value
+     *   - The current key
+     *
+     * If the filter returns exactly boolean false, the element is not copied
+     * into the new map.  Otherwise, it is.  Keys from the original map carry
+     * into the new map.
+     *
+     * @param callable|string $expression
+     * @return static
+     */
+    public function filter($expression)
+    {
+        $new = new static();
+
+        $this->walk(function ($v, $k) use ($expression, $new) {
+            $result = $this->call($expression, $v, $k);
+            if ($this->passes($result)) {
+                $new[$k] = $v;
+            }
+        });
+
+        return $new;
+    }
+
+    /**
+     * Apply the expression to each element of the map, and creating a new
+     * map with keys corresponding to the expression's return value.
+     *
+     * ```
+     * $counted_by_byte = new Map(count_chars('war of the worlds', 1));
+     * $keyed_by_letter = $counted_by_byte->rekey('chr($_1)');
+     * ```
+     *
+     * @param callable|string $expression
+     * @return static
+     */
+    public function rekey($expression)
+    {
+        $new = new static();
+
+        $this->walk(function ($v, $k) use ($expression, $new) {
+            $new_key = $this->call($expression, $v, $k);
+            $new[$new_key] = $v;
+        });
+
+        return $new;
     }
 
     /**
