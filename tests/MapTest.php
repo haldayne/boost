@@ -81,28 +81,6 @@ class MapTest extends \PHPUnit_Framework_TestCase
         $this->assertSame(['a' => 'apple'], $x->toArray());
     }
 
-    public function test_walk()
-    {
-        $c = new Map(range(5, 9));
-        $c->walk(function ($value, $key) use (&$key_sum, &$value_sum) {
-            $key_sum += $key;
-            $value_sum += $value;
-        });
-        $this->assertSame(10, $key_sum);
-        $this->assertSame(35, $value_sum);
-
-        $c = new Map(range(1, 3));
-        $c->walk(function ($value, $key) use (&$x) {
-            if (1 === $key) {
-                return false;
-            } else {
-                $x = [ $key => $value ];
-                return 0;
-            }
-        });
-        $this->assertSame([ 0 => 1 ], $x);
-    }
-
     public function test_partition()
     {
         // by value
@@ -133,11 +111,11 @@ class MapTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    public function test_find()
+    public function test_all()
     {
         $nums = new Map(range(0, 9));
-        $even = $nums->find(function ($val, $key) { return 0 == $val % 2; });
-        $odds = $nums->find('1 == ($_0 % 2)');
+        $even = $nums->all(function ($val, $key) { return 0 == $val % 2; });
+        $odds = $nums->all('1 == ($_0 % 2)');
         $this->assertSame(
             array_combine([ 0, 2, 4, 6, 8 ], [ 0, 2, 4, 6, 8 ]),
             $even->toArray()
@@ -222,34 +200,6 @@ class MapTest extends \PHPUnit_Framework_TestCase
         $popped = $nums->pop();
         $this->assertSame(0, $nums->count());
         $this->assertSame($num, $popped);
-    }
-
-    public function test_guard_valid()
-    {
-        $nums = new Map([], function ($v) { return is_int($v); });
-        $nums->set(0, 0);
-        $nums->push(1);
-        $nums[] = 2;
-        $this->assertSame([ 0, 1, 2 ], $nums->toArray());
-    }
-
-    public function test_guard_invalid()
-    {
-        $nums = new Map([], function ($v) { return is_int($v); });
-        $attempts = [
-            'set'    => function ($nums) { $nums->set(0, 'a'); },
-            'push'   => function ($nums) { $nums->push('b'); },
-            'append' => function ($nums) { $nums[] = 'c'; },
-        ];
-        foreach ($attempts as $method => $attempt) {
-            try {
-                $attempt($nums);
-                $this->fail("Should not be able to $method into this map");
-            } catch (\UnexpectedValueException $ex) {
-            } catch (\Exception $ex) {
-                $this->fail('Guard threw unexpected exception');
-            }
-        }
     }
 
     public function test_rekey()

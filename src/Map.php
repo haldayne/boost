@@ -6,13 +6,12 @@ use Haldayne\Boost\Contract\Jsonable;
 use Haldayne\Boost\Lambda\Expression;
 
 /**
- * An improvement on PHP associative arrays.
+ * API improvements on the already powerful PHP associative arrays.
  *
- * Sports a fluent interface accepting callables to drive array operations,
- * similar in spirit to jQuery. Supports keys of any type: scalars, even
- * arrays and objects!  Used in place of `array ()` and `[]`, your code will
- * be easier to write *and* read.
+ * Features a fluent interface, keys of any type, and a short-hand syntax
+ * for callable expressions. Also features
  *
+ * Commonalities amongst methods:
  * In the API, a formal variable named `$collection` must be one of:
  *   - Haldayne\Boost\Map
  *   - Haldayne\Boost\Contract\Arrayable
@@ -58,25 +57,15 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     /**
      * Create a new map.
      *
-     * Initialize the map with the given collection, if any. Accepts any kind
-     * of collection: array, object, Traversable, another Map, etc.
-     *
-     * Optionally, protect all `set`-like operations (`set`, `['foo']`, 
-     * `push`, etc) with a guard callable. The guard callable receives the
-     * proposed value as its first argument. If the guard returns boolean
-     * `false`, an exception will be raised, otherwise the value will be set
-     * into the map.
+     * Initialize the map with the given collection, which can be any type
+     * that is "collection-like": array, object, Traversable, another Map,
+     * etc.
      *
      * @param Map|Arrayable|Jsonable|Traversable|object|array $collection
-     * @param callable $guard
      * @throws \InvalidArgumentException
      */
-    public function __construct($collection = null, callable $guard = null)
+    public function __construct($collection = null)
     {
-        // set the guard first...
-        $this->guard = $guard;
-
-        // ... now add the given collection under supervision of that guard
         if (null !== $collection) {
             $array = $this->collection_to_array($collection);
             if (false === $array) {
@@ -93,23 +82,23 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     }
 
     /**
-     * Return a new map containing only members of this map that pass the
-     * expression.
+     * Create a new map containing all members from this map whose elements
+     * satisfy the expression.
      * 
-     * You give an expression deciding whether an element is in or out, and
-     * this returns a new map of those that are in. Ex, find both the odd and
-     * even numbers:
+     * The expression decides whether an element is in or out. If the
+     * expression returns boolean false, the element is out.  Otherwise, it's
+     * in.
      *
      * ```
      * $nums = new Map(range(0, 9));
-     * $even = $nums->find(function ($val, $key) { return 0 == $val % 2; });
-     * $odds = $nums->find('1 == ($_0 % 2)');
+     * $even = $nums->all(function ($val, $key) { return 0 == $val % 2; });
+     * $odds = $nums->all('$_0 & 1');
      * ```
      *
      * @param callable|string $expression
-     * @return Map
+     * @return static
      */
-    public function find($expression)
+    public function all($expression)
     {
         return $this->grep($expression);
     }
@@ -306,51 +295,6 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     }
 
     /**
-     * Execute the given code over each element of the map. The code receives
-     * the value by reference and then the key as formal parameters.
-     *
-     * The items are walked in the order they exist in the map. If the code
-     * returns boolean false, then the iteration halts. Values can be modified
-     * from within the callback, but not keys.
-     *
-     * Example:
-     * ```
-     * $map->each(function (&$value, $key) { $value++; return true; })->sum();
-     * ```
-     *
-     * @param callable $code
-     * @return $this
-     */
-    public function walk(callable $code)
-    {
-        foreach ($this->array as $hash => &$value) {
-            $key = $this->hash_to_key($hash);
-            if (! $this->passes($this->call($code, $value, $key))) {
-                break;
-            }
-        }
-        return $this;
-    }
-
-    /**
-     * Like `walk`, except walk from the end toward the front.
-     *
-     * @param callable $code
-     * @return $this
-     */
-    public function walk_backward(callable $code)
-    {
-        for (end($this->array); null !== ($hash = key($this->array)); prev($this->array)) {
-            $key   = $this->hash_to_key($hash);
-            $value =& current($this->array);
-            if (! $this->passes($this->call($code, $value, $key))) {
-                break;
-            }
-        }
-        return $this;
-    }
-
-    /**
      * Groups elements of this map based on the result of an expression.
      *
      * Calls the expression for each element in this map. The expression
@@ -375,7 +319,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     public function partition($expression)
     {
         $outer = new MapOfMaps();
-        $proto = new static([], $this->guard);
+        $proto = new static();
 
         $this->walk(function ($v, $k) use ($expression, $outer, $proto) {
             $partition = $this->call($expression, $v, $k);
@@ -540,7 +484,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
         return $element;
     }
 
-    // ------------------------------------------------------------------------
+    // -----------------------------------------------------------------------
     // implements \Countable
 
     /**
@@ -553,12 +497,12 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
         return count($this->array);
     }
 
-    // ------------------------------------------------------------------------
+    // -----------------------------------------------------------------------
     // implements Arrayable
 
     /**
-     * Copy this map into an array, recursing as necessary to convert contained
-     * collections into arrays.
+     * Copy this map into an array, recursing as necessary to convert
+     * contained collections into arrays.
      */
     public function toArray()
     {
@@ -571,7 +515,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
         return $outer;
     }
 
-    // ------------------------------------------------------------------------
+    // -----------------------------------------------------------------------
     // implements Jsonable
 
     /**
@@ -582,7 +526,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
         return json_encode($this->toArray(), $options);
     }
 
-    // ------------------------------------------------------------------------
+    // -----------------------------------------------------------------------
     // implements \ArrayAccess
 
     /**
@@ -612,26 +556,17 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     /**
      * Set the value at a given key.
      *
-     * If key is null, the value is appended to the array using numeric indexes.
-     * If the map was constructed with a set guard, then pass the value to the
-     * guard. If the guard fails, the set throws an exception.
+     * If key is null, the value is appended to the array using numeric
+     * indexes, just like native PHP. Unlike native-PHP, $key can be of any
+     * type: boolean, int, float, string, array, object, closure, resource.
      *
      * @param mixed $key
      * @param mixed $value
      * @return void
-     * @throws \UnexpectedValueException
      */
     public function offsetSet($key, $value)
     {
-        // check the value passes our guard, if a guard is defined
-        if (null !== $this->guard) {
-            $guard = $this->guard;
-            if (! $this->passes($guard($value))) {
-                throw new \UnexpectedValueException('Value did not pass guard');
-            }
-        }
-
-        // set the value into our internal array
+        // hash the key
         if (null === $key) {
             // ask PHP to give me the next index
             // http://stackoverflow.com/q/3698743/2908724
@@ -645,6 +580,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
         } else {
             $hash = $this->key_to_hash($key);
         }
+
+        // store
         $this->array[$hash] = $value;
     }
 
@@ -659,7 +596,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
         unset($this->array[$this->key_to_hash($key)]);
     }
 
-    // ------------------------------------------------------------------------
+    // -----------------------------------------------------------------------
     // implements \IteratorAggregate
 
     /**
@@ -673,7 +610,22 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     }
 
 
-    // ========================================================================
+    // =======================================================================
+    // PROTECTED API
+
+    /**
+     * Decide if the given result is considered "passing" or "failing".
+     *
+     * @param mixed $result
+     * @return bool
+     */
+    protected function passes($result)
+    {
+        return false === $result ? false : true;
+    }
+
+
+    // =======================================================================
     // PRIVATE API
 
     /**
@@ -681,12 +633,6 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * @var array
      */
     private $array = [];
-
-    /**
-     * The guard code protecting sets.
-     * @var callable|string|null
-     */
-    private $guard = null;
 
     /**
      * Track hashes we've created for non-string keys.
@@ -735,17 +681,6 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     {
         $callable = new Expression($expression);
         return $callable($value, $key);
-    }
-
-    /**
-     * Decide if the given value is considered "passing" or "failing".
-     *
-     * @param mixed $value
-     * @return bool
-     */
-    private function passes($value)
-    {
-        return false === $value ? false : true;
     }
 
     /**
@@ -822,8 +757,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     private function grep($expression, $limit = null)
     {
-        // initialize our return map and bookkeeping values
-        $map = new static([], $this->guard);
+        // initialize our return map and book-keeping values
+        $map = new static();
         $bnd = empty($limit) ? null : abs($limit);
         $cnt = 0;
 
@@ -847,5 +782,50 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
         }
 
         return $map;
+    }
+
+    /**
+     * Execute the given code over each element of the map. The code receives
+     * the value by reference and then the key as formal parameters.
+     *
+     * The items are walked in the order they exist in the map. If the code
+     * returns boolean false, then the iteration halts. Values can be modified
+     * from within the callback, but not keys.
+     *
+     * Example:
+     * ```
+     * $map->each(function (&$value, $key) { $value++; return true; })->sum();
+     * ```
+     *
+     * @param callable $code
+     * @return $this
+     */
+    private function walk(callable $code)
+    {
+        foreach ($this->array as $hash => &$value) {
+            $key = $this->hash_to_key($hash);
+            if (! $this->passes($this->call($code, $value, $key))) {
+                break;
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * Like `walk`, except walk from the end toward the front.
+     *
+     * @param callable $code
+     * @return $this
+     */
+    private function walk_backward(callable $code)
+    {
+        for (end($this->array); null !== ($hash = key($this->array)); prev($this->array)) {
+            $key   = $this->hash_to_key($hash);
+            $value =& current($this->array);
+            if (! $this->passes($this->call($code, $value, $key))) {
+                break;
+            }
+        }
+        return $this;
     }
 }

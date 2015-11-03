@@ -2,20 +2,14 @@
 namespace Haldayne\Boost;
 
 /**
- * Implements a Map of Maps.
+ * Implements a Map of Maps, which is a Map that must contain only Maps.
  */
-class MapOfMaps extends Map
+class MapOfMaps extends GuardedMapAbstract
 {
     /**
-     * Create a new map of maps.
+     * {@inheritDoc}
      */
-    public function __construct($collection = null)
-    {
-        parent::__construct(
-            $collection,
-            function ($value) {
-                return $value instanceof Map;
-            }
-        );
+    protected function allowed($value) {
+        return $value instanceof Map;
     }
 }
