@@ -95,6 +95,35 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     }
 
     /**
+     * Apply the filter to every element, creating a new map with only those
+     * elements from the original map that do not fail this filter.
+     *
+     * The filter expressions receives two arguments:
+     *   - The current value
+     *   - The current key
+     *
+     * If the filter returns exactly boolean false, the element is not copied
+     * into the new map.  Otherwise, it is.  Keys from the original map carry
+     * into the new map.
+     *
+     * @param callable|string $expression
+     * @return static
+     */
+    public function filter($expression)
+    {
+        $new = new static();
+
+        $this->walk(function ($v, $k) use ($expression, $new) {
+            $result = $this->call($expression, $v, $k);
+            if ($this->passes($result)) {
+                $new[$k] = $v;
+            }
+        });
+
+        return $new;
+    }
+
+    /**
      * Return a new map containing the first N elements passing the
      * expression.
      * 
@@ -355,20 +384,20 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     }
 
     /**
-     * Walk the map, applying the expression to every element, so as to reduce
-     * them to a single value.
+     * Walk the map, applying the reducer callable to every element, so as to
+     * reduce the map to a single value.
      *
-     * The expression receives three arguments:
+     * The reducer callable receives three arguments:
      *   - The current reduction
      *   - The current value
      *   - The current key
      * 
-     * The first time the expression is called, the current reduction is the
-     * given initial value.
+     * The given initial value is passed as the current reduction on the first
+     * invocation of the reducer callable.
      *
      * ```
      * $nums = new Map(range(0, 3));
-     * $sum = $nums->reduce(function ($sum, $value) { return $sum + $value; });
+     * $sum = $nums->reduce(function ($sum, $int) { return $sum + $int; });
      * // $sum == 6
      * ```
      *
@@ -376,50 +405,21 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * final reduced value. The `$final` callable must return the new final
      * value.
      *
-     * @param callable|string $expression
+     * @param callable $reducer
      * @param mixed $initial
      * @param callable|null $final
      * @return mixed
      *
      * @see http://php.net/manual/en/function.array-reduce.php
      */
-    public function reduce($expression, $initial = null, callable $final = null)
+    public function reduce(callable $reducer, $initial = null, callable $final = null)
     {
         $reduced = $initial;
-        $this->walk(function ($v, $k) use ($expression, &$reduced) {
-            $reduced = $this->call($expression, $reduced, $v, $k);
+        $this->walk(function ($value, $key) use ($reducer, &$reduced) {
+            $reduced = $reducer($reduced, $value, $key);
         });
 
         return is_callable($final) ? $final($reduced) : $reduced;
-    }
-
-    /**
-     * Apply the filter to every element, creating a new map with only those
-     * elements from the original map that do not fail this filter.
-     *
-     * The filter expressions receives two arguments:
-     *   - The current value
-     *   - The current key
-     *
-     * If the filter returns exactly boolean false, the element is not copied
-     * into the new map.  Otherwise, it is.  Keys from the original map carry
-     * into the new map.
-     *
-     * @param callable|string $expression
-     * @return static
-     */
-    public function filter($expression)
-    {
-        $new = new static();
-
-        $this->walk(function ($v, $k) use ($expression, $new) {
-            $result = $this->call($expression, $v, $k);
-            if ($this->passes($result)) {
-                $new[$k] = $v;
-            }
-        });
-
-        return $new;
     }
 
     /**
@@ -444,6 +444,33 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
         });
 
         return $new;
+    }
+
+    /**
+     * Merge the given collection into this map.
+     *
+     * The merger callable decides how to merge the current map's value with
+     * the given collection's value.  The merger callable receives two
+     * arguments:
+     *   - This map's value at the given key
+     *   - The collection's value at the given key
+     *
+     * If the current map does not have a value for a key in the collection,
+     * then the default value is assumed.
+     *
+     * @param Map|Arrayable|Jsonable|Traversable|object|array $collection
+     * @param callable $merger
+     * @param mixed $default
+     * @return $this
+     */
+    public function merge($collection, callable $merger, $default = null)
+    {
+        $array = $this->collection_to_array($collection);
+        foreach ($array as $key => $value) {
+            $current = $this->get($key, $default);
+            $this->set($key, $merger($current, $value));
+        }
+        return $this;
     }
 
     /**
