@@ -57,4 +57,19 @@ class GuardedMapAbstractTest extends \PHPUnit_Framework_TestCase
         $this->setExpectedException('\UnexpectedValueException');
         $this->sut[] = 42;
     }
+
+    public function test_normalization()
+    {
+        $sut = $this->getMockForAbstractClass(
+            '\Haldayne\Boost\GuardedMapAbstract',
+            [], '', true, true, true,
+            [ 'normalize' ]
+        );
+        $sut->expects($this->any())
+            ->method('normalize')
+            ->will($this->returnValue('bar'))
+        ;
+        $sut->push('foo');
+        $this->assertSame('bar', $sut->pop());
+    }
 }
