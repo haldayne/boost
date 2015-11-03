@@ -2,19 +2,16 @@
 namespace Haldayne\Boost;
 
 /**
- * Implements a map of numbers, that is values which pass the `is_numeric`
- * test.
+ * Implements a map of numbers, that is a Map whose values must all pass the
+ * `is_numeric` test.
  */
-class MapOfNumerics extends Map
+class MapOfNumerics extends GuardedMapAbstract
 {
     /**
-     * Create a new map of numerics.
+     * {@inheritDoc}
      */
-    public function __construct($collection = null)
+    protected function allowed($value)
     {
-        parent::__construct(
-            $collection,
-            function ($value) { return is_numeric($value); }
-        );
+        return is_numeric($value);
     }
 }
