@@ -359,15 +359,19 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      *
      * ```
      * $nums = new Map(range(0, 9));
-     * $doubles = $nums->map('$_0 * 2');
+     * $doubled = $nums->map('$_0 * 2');
      * ```
      *
      * The expression receives two arguments:
-     *   - The current value
-     *   - The current key
+     *   - The current value in `$_0`
+     *   - The current key in `$_1`
      *
      * The keys in the resulting map will be the same as the keys in the 
      * original map: only the values have (potentially) changed.
+     *
+     * Recommended to use this method when you are mapping from one type to
+     * the same type: int to int, string to string, etc. If you are changing
+     * types, use the more powerful `transform` method.
      *
      * @param callable|string $expression
      * @return static
@@ -471,6 +475,45 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
             $this->set($key, $merger($current, $value));
         }
         return $this;
+    }
+
+    /**
+     * Transform
+     *
+     * $creator receives this map and must return a Map.
+     *
+     * $transformer receives the current value and key and must return a
+     * strategy: (a) no result to add to map, (b) one result to add, (c)
+     * many results to add. One result is a special case of many. For each
+     * to add, loop and add them in.
+     *
+     * Notes: don't just return null or false, because that might be the
+     * value I want to add in. Don't just return an array or Map because,
+     * again, I might want to add that in. (MapOfCollections). Seems the
+     * only thing to return that is valid is a throw-away Strategy class.
+     */
+    public function transform(callable $creator, callable $transformer)
+    {
+        $new = $creator($this);
+        if (! $new instanceof Map) {
+            throw new \UnexpectedValueException(sprintf(
+                '$creator returned type %s, expecting class Map',
+                gettype($new)
+            ));
+        }
+
+        $this->walk(function ($value, $key) use ($new, $transformer) {
+            $strategy = $transformer($value, $key);
+            if ($operation instanceof TransformStrategy) {
+            } else {
+                throw new \UnexpectedValueException(sprintf(
+                    '$tranformer returned type %s, expecting class TransformStrategy',
+                    gettype($operation)
+                ));
+            }
+        });
+
+        return $new;
     }
 
     /**

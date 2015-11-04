@@ -24,15 +24,28 @@ class MapOfStrings extends GuardedMapAbstract
     }
 
     /**
-     * Factory a new map by splitting a string at the given separator.
-     *
-     * @param string $separator
-     * @param string $string
-     * @return static
+     * Calculate letter or word frequency.
      */
-    public static function split($separator, $string)
+    public function frequency()
     {
-        return new static(explode($separator, $string));
+        return $this
+            ->transform( // convert each word to a frequency count of letters
+                function () { return new MapOfCollections(); },
+                function ($word) {
+                    $freqs = new MapOfInts(count_chars($word, 1));
+                    $freqs->rekey('chr($_1)');
+                    $strategy = new TransformStrategy();
+                    $strategy->push($freqs);
+                    return $strategy;
+                },
+            )
+            ->reduce( // sum up the individual word's frequency counts
+                function ($totals, $counts) {
+                    return $totals->translate($counts);
+                },
+                new MapOfInts()
+            )
+        ;
     }
 
     // PROTECTED API

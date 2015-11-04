@@ -15,17 +15,21 @@ class MapOfStringsTest extends \PHPUnit_Framework_TestCase
         $map->push($value);
     }
 
-    public function test_split()
-    {
-        $map = MapOfStrings::split(' ', 'war of the worlds');
-        $this->assertSame(4, $map->count());
-        $this->assertSame('the', $map[2]);
-    }
-
     public function test_join()
     {
         $map = new MapOfStrings([ 'bleak', 'house' ]);
         $this->assertSame('bleak house', $map->join(' '));
+    }
+
+    public function test_letter_frequency()
+    {
+        $words = new MapOfStrings(explode(' ', 'the cat in the hat'));
+        $freqs = $words->frequency();
+        $this->assertInstanceOf('\Haldayne\Boost\MapOfInts', $freqs);
+        $this->assertSame(
+            [],
+            $freqs->toArray()
+        );
     }
 
     // -=-= Data Providers =-=-
