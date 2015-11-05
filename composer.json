@@ -17,9 +17,7 @@
         },
         "files": [
             "src/functions/bytes.php",
-            "src/functions/ini_size_to_bytes.php",
-            "src/functions/header_ip.php",
-            "src/functions/remote_ip.php"
+            "src/functions/ini_size_to_bytes.php"
         ]
     },
     "extra": {
