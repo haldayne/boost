@@ -388,42 +388,47 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     }
 
     /**
-     * Walk the map, applying the reducer callable to every element, so as to
+     * Walk the map, applying a reducing expression to every element, so as to
      * reduce the map to a single value.
      *
-     * The reducer callable receives three arguments:
-     *   - The current reduction
-     *   - The current value
-     *   - The current key
+     * The `$reducer` expression receives three arguments:
+     *   - The current reduction (`$_0`)
+     *   - The current value (`$_1`)
+     *   - The current key (`$_2`)
      * 
-     * The given initial value is passed as the current reduction on the first
-     * invocation of the reducer callable.
+     * The initial value, if given or null if not, is passed as the current
+     * reduction on the first invocation of `$reducer`. The return value from
+     * `$reducer` then becomes the new, current reduced value.
      *
      * ```
      * $nums = new Map(range(0, 3));
-     * $sum = $nums->reduce(function ($sum, $int) { return $sum + $int; });
+     * $sum = $nums->reduce('$_0 + $_1');
      * // $sum == 6
      * ```
      *
-     * If `$final` is given and a callable, it will be called after with the
-     * final reduced value. The `$final` callable must return the new final
-     * value.
+     * If `$finisher` is a callable or string expression, then it will be
+     * called last, after iterating over all elements. It will be passed
+     * reduced value. The `$finisher` must return the new final value.
      *
-     * @param callable $reducer
+     * @param callable|string $reducer
      * @param mixed $initial
-     * @param callable|null $final
+     * @param callable|string|null $finisher
      * @return mixed
      *
      * @see http://php.net/manual/en/function.array-reduce.php
      */
-    public function reduce(callable $reducer, $initial = null, callable $final = null)
+    public function reduce($reducer, $initial = null, $finisher = null)
     {
         $reduced = $initial;
         $this->walk(function ($value, $key) use ($reducer, &$reduced) {
-            $reduced = $reducer($reduced, $value, $key);
+            $reduced = $this->call($reducer, $reduced, $value, $key);
         });
 
-        return is_callable($final) ? $final($reduced) : $reduced;
+        if (null === $finisher) {
+            return $reduced;
+        } else {
+            return $this->call($finisher, $reduced);
+        }
     }
 
     /**
@@ -478,42 +483,92 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     }
 
     /**
-     * Transform
+     * Flexibly and thoroughly change this map into another map.
      *
-     * $creator receives this map and must return a Map.
+     * ```
+     * // transform a word list into a map of word to frequency in the list
+     * use Haldayne\Boost\Map;
+     * $words   = new Map([ 'bear', 'bee', 'goose', 'bee' ]);
+     * $lengths = $words->transform(
+     *     function (Map $new, $word) { 
+     *         if ($new->has($word)) {
+     *             $new->set($word, $new->get($word)+1);
+     *         } else {
+     *             $new->set($word, 1);
+     *         }
+     *     }
+     * );
+     * ```
      *
-     * $transformer receives the current value and key and must return a
-     * strategy: (a) no result to add to map, (b) one result to add, (c)
-     * many results to add. One result is a special case of many. For each
-     * to add, loop and add them in.
+     * Sometimes you need to create one map from another using a strategy
+     * that isn't one-to-one. You may need to change keys. You may need to
+     * add multiple elements. You may need to delete elements. You may need
+     * to change from a map to a number.
+     * 
+     * Whatever the case, the other simpler methods in Map don't quite fit the
+     * problem. What you need, and what this method provides, is a complete
+     * machine to transform this map into something else:
      *
-     * Notes: don't just return null or false, because that might be the
-     * value I want to add in. Don't just return an array or Map because,
-     * again, I might want to add that in. (MapOfCollections). Seems the
-     * only thing to return that is valid is a throw-away Strategy class.
+     * ```
+     * // convert a word list into a count of unique letters in those words
+     * use Haldayne\Boost\Map;
+     * $words   = new Map([ 'bear', 'bee', 'goose', 'bee' ]);
+     * $letters = $words->transform(
+     *     function ($frequencies, $word) {
+     *         foreach (count_chars($word, 1) as $byte => $frequency) {
+     *             $letter = chr($byte);
+     *             if ($frequencies->has($letter)) {
+     *                 $new->set($letter, $frequencies->get($letter)+1);
+     *             } else {
+     *                 $new->set($letter, 1);
+     *             }
+     *         }
+     *     },
+     *     function (Map $original) { return new MapOfIntegers(); },
+     *     function (MapOfIntegers $new) { return $new->sum(); }
+     * );
+     * ```
+     *
+     * This method accepts three callables
+     * 1. `$creator`, which is called first with the current map, performs any
+     * initialization needed.  The result of this callable will be passed to
+     * all the other callables.  If no creator is given, then use a default
+     * one that returns an empty Map.
+     * 
+     * 2. `$transformer`, which is called for every element in this map and
+     * receives the initialized value, the current value, and the current key
+     * in that order. The transformer should modify the initialized value
+     * appropriately. Often this means adding to a new map zero or more
+     * tranformed values.
+     *
+     * 3. `$finisher`, which is called last, receives the initialized value
+     * that was modified by the transformer calls. The finisher may transform
+     * that value once more as needed. If no finisher given, then no finishing
+     * step is made.
+     *
+     * @param callable $tranformer
+     * @param callable|null $creator
+     * @param callable|null $finisher
      */
-    public function transform(callable $creator, callable $transformer)
+    public function transform(callable $transformer, callable $creator = null, callable $finisher = null)
     {
-        $new = $creator($this);
-        if (! $new instanceof Map) {
-            throw new \UnexpectedValueException(sprintf(
-                '$creator returned type %s, expecting class Map',
-                gettype($new)
-            ));
+        // create the initial object, using as needed the default creator function
+        if (null === $creator) {
+            $creator = function (Map $original) { return new Map(); };
         }
+        $initial = $creator($this);
 
-        $this->walk(function ($value, $key) use ($new, $transformer) {
-            $strategy = $transformer($value, $key);
-            if ($operation instanceof TransformStrategy) {
-            } else {
-                throw new \UnexpectedValueException(sprintf(
-                    '$tranformer returned type %s, expecting class TransformStrategy',
-                    gettype($operation)
-                ));
-            }
+        // transform the initial value using the transformer
+        $this->walk(function ($value, $key) use ($transformer, &$initial) {
+            $transformer($initial, $value, $key);
         });
 
-        return $new;
+        // finish up
+        if (null === $finisher) {
+            return $initial;
+        } else {
+            return $finisher($initial);
+        }
     }
 
     /**
@@ -917,16 +972,14 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      }
 
     /**
-     * Calls the given code with the given value and key as first & second argument.
+     * Call the expression with the arguments.
      * 
      * @param callable|string $expression
-     * @param mixed $value
-     * @param string $key
      * @throws \InvalidArgumentException
      */
-    private function call($expression, &$value, $key)
+    private function call($expression)
     {
         $callable = new Expression($expression);
-        return $callable($value, $key);
+        return call_user_func_array($callable, func_get_args());
     }
 }
