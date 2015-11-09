@@ -46,6 +46,10 @@ Now we can use Map's fluent interface to solve real problems:
 
 # Related projects
 
+:alien: :heavy_minus_sign: [Chain, a consistent and chainable way to work with arrays in PHP.](https://github.com/cocur/chain)
+
+> Working with arrays in PHP is a mess. First of all, you have to prefix most (but not all) functions with array_, the parameter ordering is not consistent. For example, array_map() expects the callback as first parameter and the array as the second, but array_filter() expects the array as first and the callback as second. You also have to wrap the function calls around the array, the resulting code is not nice to look at, not readable and hard to understand.
+
 :alien: :heavy_minus_sign: [Ardent, a Collections library for PHP.](https://github.com/morrisonlevi/Ardent)
 
 > While developing and helping others develop PHP applications I noticed the trend to use PHP's arrays in nearly every task. Arrays in PHP are useful but are overused because PHP doesn't have rich standard libraries for working with common data structures and algorithms. This library hopes to fill in that gap. Undoubtably, I've made mistakes in design and implementation; hopefully more community involvement can help identify and fix such mistakes.
