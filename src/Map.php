@@ -980,6 +980,6 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     private function call($expression)
     {
         $callable = new Expression($expression);
-        return call_user_func_array($callable, func_get_args());
+        return call_user_func_array($callable, array_slice(func_get_args(), 1));
     }
 }
