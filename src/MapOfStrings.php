@@ -24,28 +24,30 @@ class MapOfStrings extends GuardedMapAbstract
     }
 
     /**
-     * Calculate letter or word frequency.
+     * Calculate frequency of letters in all strings.
+     *
+     * Counts how many times each letter occurs within every string in this
+     * map.  Returns a new Map of letter to number of occurrences.  Only
+     * letters that appear will be in the resulting map.
+     *
+     * @return \Haldayne\Boost\MapOfIntegers
      */
-    public function frequency()
+    public function letter_frequency()
     {
-        return $this
-            ->transform( // convert each word to a frequency count of letters
-                function () { return new MapOfCollections(); },
-                function ($word) {
-                    $freqs = new MapOfInts(count_chars($word, 1));
-                    $freqs->rekey('chr($_1)');
-                    $strategy = new TransformStrategy();
-                    $strategy->push($freqs);
-                    return $strategy;
-                },
-            )
-            ->reduce( // sum up the individual word's frequency counts
-                function ($totals, $counts) {
-                    return $totals->translate($counts);
-                },
-                new MapOfInts()
-            )
-        ;
+        return $this->transform(
+            function ($frequencies, $word) {
+                foreach (count_chars($word, 1) as $byte => $frequency) {
+                    $letter = chr($byte);
+                    if ($frequencies->has($letter)) {
+                        $new->set($letter, $frequencies->get($letter)+1);
+                    } else {
+                        $new->set($letter, 1);
+                    }
+                }
+            },
+            function (Map $original) { return new MapOfIntegers(); },
+            function (MapOfIntegers $new) { return $new->sum(); }
+        );
     }
 
     // PROTECTED API

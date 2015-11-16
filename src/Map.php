@@ -3,7 +3,7 @@ namespace Haldayne\Boost;
 
 use Haldayne\Boost\Contract\Arrayable;
 use Haldayne\Boost\Contract\Jsonable;
-use Haldayne\Boost\Lambda\Expression;
+use Haldayne\Fox\Expression;
 
 /**
  * API improvements for PHP associative arrays. Features a consistent fluent
