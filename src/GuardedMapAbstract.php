@@ -28,7 +28,11 @@ abstract class GuardedMapAbstract extends Map
         if ($this->passes($result)) {
             parent::offsetSet($key, $this->normalize($value));
         } else {
-            throw new \UnexpectedValueException('Value forbidden in this map');
+            throw new \UnexpectedValueException(sprintf(
+                'Value of type "%s" forbidden in this instance of %s',
+                gettype($value),
+                get_class($this)
+            ));
         }
     }
 

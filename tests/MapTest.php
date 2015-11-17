@@ -212,6 +212,15 @@ class MapTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    public function test_into()
+    {
+        $map = new Map();
+        $this->assertInstanceOf(
+            '\Haldayne\Boost\MapOfStrings',
+            $map->into(new MapOfStrings)
+        );
+    }
+
     // tests for implements \Countable
 
     /** @dataProvider provides_valid_collection */

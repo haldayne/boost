@@ -13,9 +13,9 @@ use Haldayne\Fox\Expression;
  *   - array
  *   - object
  *   - \Traversable
- *   - Haldayne\Boost\Map
- *   - Haldayne\Boost\Contract\Arrayable
- *   - Haldayne\Boost\Contract\Jsonable
+ *   - \Haldayne\Boost\Map
+ *   - \Haldayne\Boost\Contract\Arrayable
+ *   - \Haldayne\Boost\Contract\Jsonable
  *
  * Methods accept a `$key` may be of any type: boolean, integer, float,
  * string, array, object, closure, or resource.
@@ -87,7 +87,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * ```
      *
      * @param callable|string $expression
-     * @return static
+     * @return Map
      */
     public function all($expression)
     {
@@ -107,11 +107,11 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * into the new map.
      *
      * @param callable|string $expression
-     * @return static
+     * @return Map
      */
     public function filter($expression)
     {
-        $new = new static();
+        $new = new self;
 
         $this->walk(function ($v, $k) use ($expression, $new) {
             $result = $this->call($expression, $v, $k);
@@ -289,7 +289,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     public function diff($collection, $comparison = Map::LOOSE)
     {
         $func = ($comparison === Map::LOOSE ? 'array_diff' : 'array_diff_assoc');
-        return new static(
+        return new self(
             $func($this->toArray(), $this->collection_to_array($collection))
         );
     }
@@ -309,7 +309,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     public function intersect($collection, $comparison = Map::LOOSE)
     {
         $func = ($comparison === Map::LOOSE ? 'array_intersect' : 'array_intersect_assoc');
-        return new static(
+        return new self(
             $func($this->toArray(), $this->collection_to_array($collection))
         );
     }
@@ -338,8 +338,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     public function partition($expression)
     {
-        $outer = new MapOfCollections();
-        $proto = new static();
+        $outer = new MapOfCollections;
+        $proto = new self;
 
         $this->walk(function ($v, $k) use ($expression, $outer, $proto) {
             $partition = $this->call($expression, $v, $k);
@@ -374,11 +374,11 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * types, use the more powerful `transform` method.
      *
      * @param callable|string $expression
-     * @return static
+     * @return Map
      */
     public function map($expression)
     {
-        $new = new static();
+        $new = new self;
 
         $this->walk(function ($v, $k) use ($expression, $new) {
             $new[$k] = $this->call($expression, $v, $k);
@@ -441,11 +441,11 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * ```
      *
      * @param callable|string $expression
-     * @return static
+     * @return Map
      */
     public function rekey($expression)
     {
-        $new = new static();
+        $new = new self;
 
         $this->walk(function ($v, $k) use ($expression, $new) {
             $new_key = $this->call($expression, $v, $k);
@@ -549,6 +549,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * @param callable $tranformer
      * @param callable|null $creator
      * @param callable|null $finisher
+     * @return mixed
      */
     public function transform(callable $transformer, callable $creator = null, callable $finisher = null)
     {
@@ -569,6 +570,28 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
         } else {
             return $finisher($initial);
         }
+    }
+
+    /**
+     * Put all of this map's elements into the target and return the target.
+     *
+     * ```
+     * $words = new MapOfStrings([ 'foo', 'bar' ]);
+     * $words->map('strlen($_0)')->into(new MapOfInts)->sum(); // 6
+     * ```
+     *
+     * Use when you've mapped your elements into a different type, and you
+     * want to fluently perform operations on the new new type. In the
+     * example, the sum of the words' lengths was calculated.
+     *
+     * @return $target
+     */
+    public function into(Map $target)
+    {
+        $this->walk(function ($value, $key) use ($target) {
+            $target->set($key, $value);
+        });
+        return $target;
     }
 
     /**
@@ -825,7 +848,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     protected function grep($expression, $limit = null)
     {
         // initialize our return map and book-keeping values
-        $map = new static();
+        $map = new self;
         $bnd = empty($limit) ? null : abs($limit);
         $cnt = 0;
 

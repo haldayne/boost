@@ -6,6 +6,15 @@ namespace Haldayne\Boost;
  */
 class Map_DemonstrationTest extends \PHPUnit_Framework_TestCase
 {
+    public function test_fluent_conversion()
+    {
+        $words = new MapOfStrings([ 'foo', 'bar' ]);
+        $this->assertSame(
+            6,
+            $words->map('strlen($_0)')->into(new MapOfInts)->sum()
+        );
+    }
+
     public function test_letter_frequency()
     {
         $words = new Map([ 'aardvark', 'roads', 'sparks' ]);
