@@ -9,7 +9,7 @@
     ],
     "require": {
         "php": "^5.5.0",
-        "haldayne/fox": "^1.0-dev"
+        "haldayne/fox": "^1.0"
     },
     "autoload": {
         "classmap": [ "src" ],
