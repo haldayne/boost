@@ -24,10 +24,18 @@ class MapOfStringsTest extends \PHPUnit_Framework_TestCase
     public function test_letter_frequency()
     {
         $words = new MapOfStrings(explode(' ', 'the cat in the hat'));
-        $freqs = $words->frequency();
+        $freqs = $words->letter_frequency();
         $this->assertInstanceOf('\Haldayne\Boost\MapOfInts', $freqs);
-        $this->assertSame(
-            [],
+        $this->assertEquals(
+            [
+                'a' => 2,
+                'c' => 1,
+                'e' => 2,
+                'h' => 3,
+                'i' => 1,
+                'n' => 1,
+                't' => 4,
+            ],
             $freqs->toArray()
         );
     }

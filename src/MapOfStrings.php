@@ -39,14 +39,13 @@ class MapOfStrings extends GuardedMapAbstract
                 foreach (count_chars($word, 1) as $byte => $frequency) {
                     $letter = chr($byte);
                     if ($frequencies->has($letter)) {
-                        $new->set($letter, $frequencies->get($letter)+1);
+                        $frequencies->set($letter, $frequencies->get($letter)+1);
                     } else {
-                        $new->set($letter, 1);
+                        $frequencies->set($letter, 1);
                     }
                 }
             },
-            function (Map $original) { return new MapOfIntegers(); },
-            function (MapOfIntegers $new) { return $new->sum(); }
+            function (Map $original) { return new MapOfInts(); }
         );
     }
 
