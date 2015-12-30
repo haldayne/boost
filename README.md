@@ -2,46 +2,44 @@
 
 Most PHP programming consists of data-pushing between a database and a browser, which means a lot of string & array processing.  Think about splitting strings, walking arrays, and so on.  Sadly, when it comes to this common stuff, PHP is horribly verbose compared to JS, python, etc.  This library addresses this sadness with:
 
-* toolbox approach to string manipulation
-* callable-driven fluent interfaces for array processing
+* toolbox approach to string manipulation (*TODO*)
+* callable-driven, fluent interfaces for array processing
 
 # Let's get started
 
 You need at least PHP 5.5.0.  No other extensions are required.
 
-Install via composer: `php composer.phar require haldayne/boost 1.0.x-dev`
+Install via composer: `php composer.phar require haldayne/boost ^1.0`
 
 # Using Boost
 
+[Read the docs](http://haldayne-docs.readthedocs.org/en/latest/boost) for complete examples.
+
 ## Array processing with `Map`
 
-We all know that PHP arrays are a collection of `<key, value>` pairs.  The computer science term for this is an [associative array](https://en.wikipedia.org/wiki/Associative_array), also called a dictionary, a hash, or a map.  Boost needs a name for its improvement on PHP arrays, and `Map` is good because it's *easy to type* in those insane use statements:
+PHP arrays are a collection of `<key, value>` pairs.  The computer science term for this is an [associative array](https://en.wikipedia.org/wiki/Associative_array), also called a dictionary, a hash, or a map.  Boost needs a name for its improvement on PHP arrays, and `Map` is good because it's *easy to type* in those insane use statements:
 
     use Haldayne\Boost\Map;
 
 Now we can use Map's fluent interface to solve real problems:
 
-* use anything as a key: scalars, even *arrays and objects*!
+* use anything as a key: scalars, even *arrays and objects*
 * one liner solutions for...
    * map/reduce
    * filter/each
    * partition (aka group by)
+   * apply same method to a bunch of objects
    * ... and more
 * throw-away callables until PHP supports short closures
    * `$numbers->grep('$v % 2')` vs.
      `$numbers->grep(function ($v) { return $v % 2; })`
 * enforce "Array of Type" type hinting:
-   * `Haldayne\Boost\MapOfBoolean`
-   * `Haldayne\Boost\MapOfInteger`
-   * `Haldayne\Boost\MapOfFloat`
-   * `Haldayne\Boost\MapOfString`
-   * `Haldayne\Boost\MapOfScalar`
-   * `Haldayne\Boost\MapOfArray`
-   * `Haldayne\Boost\MapOfTraversable`
-   * `Haldayne\Boost\MapOfObject`
-   * `Haldayne\Boost\MapOfMap`
-   * `Haldayne\Boost\MapOfResource`
-   * `Haldayne\Boost\MapOfCallable`
+   * `Haldayne\Boost\MapOfInts`
+   * `Haldayne\Boost\MapOfFloats`
+   * `Haldayne\Boost\MapOfStrings`
+   * `Haldayne\Boost\MapOfCollections`
+   * `Haldayne\Boost\MapOfNumerics`
+   * `Haldayne\Boost\MapOfObjects`
    * ... or create your own!
 
 # Related projects
