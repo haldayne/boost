@@ -87,7 +87,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * ```
      *
      * @param callable|string $expression
-     * @return Map
+     * @return new static
      */
     public function all($expression)
     {
@@ -107,11 +107,11 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * into the new map.
      *
      * @param callable|string $expression
-     * @return Map
+     * @return new static
      */
     public function filter($expression)
     {
-        $new = new self;
+        $new = new static;
 
         $this->walk(function ($v, $k) use ($expression, $new) {
             $result = $this->call($expression, $v, $k);
@@ -137,7 +137,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      *
      * @param callable|string $expression
      * @param int $n
-     * @return Map
+     * @return new static
      */
     public function first($expression, $n = 1)
     {
@@ -160,7 +160,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      *
      * @param callable|string $expression
      * @param int $n
-     * @return Map
+     * @return new static
      */
     public function last($expression, $n = 1)
     {
@@ -275,8 +275,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     }
 
     /**
-     * Return a new map containing those keys and values that are not present in
-     * the given collection.
+     * Return a new map containing those keys and values that are not present
+     * in the given collection.
      *
      * If comparison is loose, then only those elements whose values match will
      * be removed.  Otherwise, comparison is strict, and elements whose keys 
@@ -284,12 +284,12 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      *
      * @param Map|Arrayable|Jsonable|Traversable|object|array $collection
      * @param enum $comparison
-     * @return Map
+     * @return new static
      */
     public function diff($collection, $comparison = Map::LOOSE)
     {
         $func = ($comparison === Map::LOOSE ? 'array_diff' : 'array_diff_assoc');
-        return new self(
+        return new static(
             $func($this->toArray(), $this->collection_to_array($collection))
         );
     }
@@ -304,12 +304,12 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      *
      * @param Map|Arrayable|Jsonable|Traversable|object|array $collection
      * @param enum $comparison
-     * @return Map
+     * @return new static
      */
     public function intersect($collection, $comparison = Map::LOOSE)
     {
         $func = ($comparison === Map::LOOSE ? 'array_intersect' : 'array_intersect_assoc');
-        return new self(
+        return new static(
             $func($this->toArray(), $this->collection_to_array($collection))
         );
     }
@@ -339,7 +339,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     public function partition($expression)
     {
         $outer = new MapOfCollections;
-        $proto = new self;
+        $proto = new static;
 
         $this->walk(function ($v, $k) use ($expression, $outer, $proto) {
             $partition = $this->call($expression, $v, $k);
@@ -432,8 +432,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     }
 
     /**
-     * Apply the expression to each element of the map, and creating a new
-     * map with keys corresponding to the expression's return value.
+     * Change the key for every element in the map using an expression to
+     * calculate the new key.
      *
      * ```
      * $keyed_by_bytecode = new Map(count_chars('war of the worlds', 1));
@@ -441,11 +441,11 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * ```
      *
      * @param callable|string $expression
-     * @return Map
+     * @return new static
      */
     public function rekey($expression)
     {
-        $new = new self;
+        $new = new static;
 
         $this->walk(function ($v, $k) use ($expression, $new) {
             $new_key = $this->call($expression, $v, $k);
@@ -581,8 +581,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * ```
      *
      * Use when you've mapped your elements into a different type, and you
-     * want to fluently perform operations on the new new type. In the
-     * example, the sum of the words' lengths was calculated.
+     * want to fluently perform operations on the new type. In the example,
+     * the sum of the words' lengths was calculated.
      *
      * @return $target
      */
@@ -843,12 +843,12 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      *
      * @param callable|string $expression
      * @param int|null $limit
-     * @return Map
+     * @return new static
      */
     protected function grep($expression, $limit = null)
     {
         // initialize our return map and book-keeping values
-        $map = new self;
+        $map = new static;
         $bnd = empty($limit) ? null : abs($limit);
         $cnt = 0;
 

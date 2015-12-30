@@ -6,6 +6,23 @@ namespace Haldayne\Boost;
  */
 class Map_DemonstrationTest extends \PHPUnit_Framework_TestCase
 {
+    public function test_sum_of_word_lengths()
+    {
+        $words = new Map(array ('bee', 'bear', 'beetle'));
+        $length = $words
+            ->map(function ($word) { return strlen($word); })
+            ->reduce(function ($total, $length) { return $total + $length; })
+        ;
+        $this->assertSame(13, $length);
+    }
+
+    public function test_sum_of_odds()
+    {
+        $nums = new MapOfInts(range(0, 10));
+        $sum = $nums->all('1 == $_0 % 2')->sum();
+        $this->assertSame(25, $sum);
+    }
+
     public function test_fluent_conversion()
     {
         $words = new MapOfStrings([ 'foo', 'bar' ]);
