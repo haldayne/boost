@@ -13,9 +13,9 @@ Install via composer: `php composer.phar require haldayne/boost ^1.0`
 
 # Using Boost
 
-[Read the docs](http://haldayne-docs.readthedocs.org/en/latest/boost) for complete examples.
+[Read the docs](http://haldayne-docs.readthedocs.org/en/latest/boost) for complete examples. For an overview, read on.
 
-## Array processing with `Map`
+## Readable, chainable array processing with `Map`
 
 PHP arrays are a collection of `<key, value>` pairs.  The computer science term for this is an [associative array](https://en.wikipedia.org/wiki/Associative_array), also called a dictionary, a hash, or a map.  Boost needs a name for its improvement on PHP arrays, and `Map` is good because it's *easy to type* in those insane use statements:
 
