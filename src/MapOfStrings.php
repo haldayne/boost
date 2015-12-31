@@ -12,6 +12,7 @@ class MapOfStrings extends GuardedMapAbstract
      *
      * @param string $separator
      * @return string
+     * @api
      */
     public function join($separator)
     {
@@ -31,6 +32,7 @@ class MapOfStrings extends GuardedMapAbstract
      * letters that appear will be in the resulting map.
      *
      * @return \Haldayne\Boost\MapOfIntegers
+     * @api
      */
     public function letter_frequency()
     {

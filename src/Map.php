@@ -41,6 +41,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * Should the comparison be made loosely?
      * @see Map::diff
      * @see Map::intersect
+     * @api
      */
     const LOOSE = true;
 
@@ -48,6 +49,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * Should the comparison be made strictly?
      * @see Map::diff
      * @see Map::intersect
+     * @api
      */
     const STRICT = false;
 
@@ -60,6 +62,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      *
      * @param Map|Arrayable|Jsonable|Traversable|object|array $collection
      * @throws \InvalidArgumentException
+     * @api
      */
     public function __construct($collection = null)
     {
@@ -88,6 +91,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      *
      * @param callable|string $expression
      * @return new static
+     * @api
      */
     public function all($expression)
     {
@@ -108,6 +112,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      *
      * @param callable|string $expression
      * @return new static
+     * @api
      */
     public function filter($expression)
     {
@@ -138,6 +143,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * @param callable|string $expression
      * @param int $n
      * @return new static
+     * @api
      */
     public function first($expression, $n = 1)
     {
@@ -161,6 +167,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * @param callable|string $expression
      * @param int $n
      * @return new static
+     * @api
      */
     public function last($expression, $n = 1)
     {
@@ -174,7 +181,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * Test if every element passes the expression.
      *
      * @param callable|string $expression
-     * @bool
+     * @return bool
+     * @api
      */
     public function every($expression)
     {
@@ -185,7 +193,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * Test if at least one element passes the expression.
      *
      * @param callable|string $expression
-     * @bool
+     * @return bool
+     * @api
      */
     public function some($expression)
     {
@@ -196,7 +205,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * Test that no elements pass the expression.
      *
      * @param callable|string $expression
-     * @bool
+     * @return bool
+     * @api
      */
     public function none($expression)
     {
@@ -210,6 +220,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      *
      * @param mixed $key
      * @return bool
+     * @api
      */
     public function has($key)
     {
@@ -226,6 +237,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * @param mixed $key
      * @param mixed $default
      * @return mixed
+     * @api
      */
     public function get($key, $default = null)
     {
@@ -243,6 +255,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * @param mixed $key
      * @param mixed $value
      * @return $this
+     * @api
      */
     public function set($key, $value)
     {
@@ -257,6 +270,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      *
      * @param mixed $key
      * @return $this
+     * @api
      */
     public function forget($key)
     {
@@ -268,6 +282,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * Determine if any key and their values have been set into the map.
      *
      * @return bool
+     * @api
      */
     public function isEmpty()
     {
@@ -285,6 +300,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * @param Map|Arrayable|Jsonable|Traversable|object|array $collection
      * @param enum $comparison
      * @return new static
+     * @api
      */
     public function diff($collection, $comparison = Map::LOOSE)
     {
@@ -305,6 +321,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * @param Map|Arrayable|Jsonable|Traversable|object|array $collection
      * @param enum $comparison
      * @return new static
+     * @api
      */
     public function intersect($collection, $comparison = Map::LOOSE)
     {
@@ -335,6 +352,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      *
      * @param callable|string $expression
      * @return MapOfCollections
+     * @api
      */
     public function partition($expression)
     {
@@ -375,6 +393,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      *
      * @param callable|string $expression
      * @return Map
+     * @api
      */
     public function map($expression)
     {
@@ -414,6 +433,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * @param mixed $initial
      * @param callable|string|null $finisher
      * @return mixed
+     * @api
      *
      * @see http://php.net/manual/en/function.array-reduce.php
      */
@@ -442,6 +462,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      *
      * @param callable|string $expression
      * @return new static
+     * @api
      */
     public function rekey($expression)
     {
@@ -471,6 +492,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * @param callable $merger
      * @param mixed $default
      * @return $this
+     * @api
      */
     public function merge($collection, callable $merger, $default = null)
     {
@@ -550,6 +572,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * @param callable|null $creator
      * @param callable|null $finisher
      * @return mixed
+     * @api
      */
     public function transform(callable $transformer, callable $creator = null, callable $finisher = null)
     {
@@ -585,6 +608,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * the sum of the words' lengths was calculated.
      *
      * @return $target
+     * @api
      */
     public function into(Map $target)
     {
@@ -598,6 +622,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * Treat the map as a stack and push an element onto its end.
      *
      * @return $this
+     * @api
      */
     public function push($element)
     {
@@ -609,6 +634,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * Treat the map as a stack and pop an element off its end.
      *
      * @return mixed
+     * @api
      */
     public function pop()
     {
@@ -631,6 +657,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * Count the number of items in the map.
      *
      * @return int
+     * @api
      */
     public function count()
     {
@@ -643,6 +670,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     /**
      * Copy this map into an array, recursing as necessary to convert
      * contained collections into arrays.
+     *
+     * @api
      */
     public function toArray()
     {
@@ -663,6 +692,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
 
     /**
      * {@inheritDoc}
+     *
+     * @api
      */
     public function toJson($options = 0)
     {
@@ -746,6 +777,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * Get an iterator for a copy of the map.
      *
      * @return \ArrayIterator
+     * @api
      */
     public function getIterator()
     {

@@ -34,7 +34,8 @@ class MapOfCollections extends GuardedMapAbstract
      *
      * @param $mixed $key_for_value The key holding the new value.
      * @param $mixed $key_for_key The key holding the new value's key.
-     * return \Haldayne\Boost\Map
+     * @return \Haldayne\Boost\Map
+     * @api
      */
     public function pluck($key_for_value, $key_for_key = null)
     {

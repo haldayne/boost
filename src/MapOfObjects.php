@@ -9,6 +9,11 @@ class MapOfObjects extends GuardedMapAbstract
     /**
      * Call the given method on every object in the map, and return the
      * results as a new map.
+     *
+     * @param string $method The method on each contained object to call.
+     * @param array|null $args The arguments to pass to the method.
+     * @return \Haldayne\Boost\Map
+     * @api
      */
     public function apply($method, array $args = [])
     {

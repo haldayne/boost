@@ -9,9 +9,11 @@ class MapOfNumerics extends GuardedMapAbstract
 {
     /**
      * Translate this map by the quantities given in the other collection.
+     * This is like addition or subtraction.
      *
      * @param Map|Arrayable|Jsonable|Traversable|object|array $collection
      * @return $this
+     * @api
      *
      * @see https://en.wikipedia.org/wiki/Translation_(geometry)
      */
@@ -26,9 +28,11 @@ class MapOfNumerics extends GuardedMapAbstract
 
     /**
      * Scale this map by the factors given in the other collection.
+     * This is like multiplication or division.
      *
      * @param Map|Arrayable|Jsonable|Traversable|object|array $collection
      * @return $this
+     * @api
      *
      * @see https://en.wikipedia.org/wiki/Scaling_(geometry)
      */
@@ -45,6 +49,7 @@ class MapOfNumerics extends GuardedMapAbstract
      * Return the sum of all elements in the map.
      *
      * @return numeric
+     * @api
      */
     public function sum()
     {
@@ -58,6 +63,7 @@ class MapOfNumerics extends GuardedMapAbstract
      * Return the product of all elements in the map.
      *
      * @return numeric
+     * @api
      */
     public function product()
     {
@@ -71,6 +77,7 @@ class MapOfNumerics extends GuardedMapAbstract
      * Return the arithmetic mean ("average") of all elements in the map.
      *
      * @return numeric
+     * @api
      */
     public function mean()
     {
@@ -83,6 +90,7 @@ class MapOfNumerics extends GuardedMapAbstract
      *
      * @return numeric
      * @throws \RangeException
+     * @api
      */
     public function min()
     {
@@ -99,6 +107,7 @@ class MapOfNumerics extends GuardedMapAbstract
      *
      * @return numeric
      * @throws \RangeException
+     * @api
      */
     public function max()
     {
