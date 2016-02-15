@@ -1,5 +1,7 @@
 # *Make the common stuff easy (and legible).*
 
+[![Code Climate](https://codeclimate.com/github/haldayne/boost/badges/gpa.svg)](https://codeclimate.com/github/haldayne/boost)
+
 Most PHP programming consists of data-pushing between a database and a browser, which means a lot of string & array processing.  Think about splitting strings, walking arrays, and so on.  Sadly, when it comes to this common stuff, PHP is horribly verbose compared to JS, python, etc.  This library addresses this sadness with:
 
 * toolbox approach to string manipulation (*TODO*)
