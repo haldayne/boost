@@ -74,14 +74,20 @@ class MapOfNumerics extends GuardedMapAbstract
     }
 
     /**
-     * Return the arithmetic mean ("average") of all elements in the map.
+     * Return the arithmetic mean ("average") of all elements in the map. If
+     * there are no elements, throws a \RangeException.
      *
      * @return numeric
+     * @throws \RangeException
      * @api
      */
     public function mean()
     {
-        return $this->sum() / $this->count();
+        if (0 < $this->count()) {
+            return $this->sum() / $this->count();
+        } else {
+            throw new \RangeException('Map has no elements and therefore no mean');
+        }
     }
 
     /**
@@ -95,7 +101,7 @@ class MapOfNumerics extends GuardedMapAbstract
     public function min()
     {
         if (0 < $this->count()) {
-            return false;
+            return min($this->toArray());
         } else {
             throw new \RangeException('Map has no elements and therefore no minimum');
         }
@@ -112,10 +118,44 @@ class MapOfNumerics extends GuardedMapAbstract
     public function max()
     {
         if (0 < $this->count()) {
-            return false;
+            return max($this->toArray());
         } else {
             throw new \RangeException('Map has no elements and therefore no maximum');
         }
+    }
+
+    /**
+     * Increment the value stored at the given key by the given delta.
+     *
+     * @return $this
+     * @since 1.0.3
+     * @api
+     */
+    public function increment($key, $delta = 1)
+    {
+        if ($this->has($key)) {
+            $this->set(
+                $key, 
+                $this->get($key) + $delta
+            );
+        } else {
+            $this->set($key, $delta);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Decrement the value stored at the given key by the given delta.
+     * Implemented by simply incrementing the negative of the delta.
+     *
+     * @return $this
+     * @since 1.0.3
+     * @api
+     */
+    public function decrement($key, $delta = 1)
+    {
+        return $this->increment($key, -$delta);
     }
 
     // PROTECTED API
