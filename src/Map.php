@@ -70,9 +70,25 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
             $array = $this->collection_to_array($collection);
             array_walk(
                 $array,
-                function ($v, $k) { $this->offsetSet($k, $v); }
+                function ($v, $k) { $this->set($k, $v); }
             );
         }
+    }
+
+    /**
+     * Get the keys of this map as a new map.
+     * 
+     * @return new static
+     * @api
+     * @since 1.0.5
+     */
+    public function keys()
+    {
+        $map = new static;
+        foreach (array_keys($this->array) as $hash) {
+            $map[] = $this->hash_to_key($hash);
+        }
+        return $map;
     }
 
     /**
@@ -259,7 +275,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     public function set($key, $value)
     {
-        $this->offsetSet($key, $value);
+        $hash = $this->key_to_hash($key);
+        $this->array[$hash] = $value;
         return $this;
     }
 
@@ -626,7 +643,16 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     public function push($element)
     {
-        $this->offsetSet(null, $element);
+        // ask PHP to give me the next index
+        // http://stackoverflow.com/q/3698743/2908724
+        $this->array[] = 'probe';
+        end($this->array);
+        $next = key($this->array);
+        unset($this->array[$next]);
+
+        // hash that and store
+        $this->set($next, $element);
+
         return $this;
     }
 
@@ -740,23 +766,11 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     public function offsetSet($key, $value)
     {
-        // hash the key
         if (null === $key) {
-            // ask PHP to give me the next index
-            // http://stackoverflow.com/q/3698743/2908724
-            $this->array[] = 'probe';
-            end($this->array);
-            $next = key($this->array);
-            unset($this->array[$next]);
-
-            // hash that
-            $hash = $this->key_to_hash($next);
+            $this->push($value);
         } else {
-            $hash = $this->key_to_hash($key);
+            $this->set($key, $value);
         }
-
-        // store
-        $this->array[$hash] = $value;
     }
 
     /**
@@ -976,8 +990,17 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     private function key_to_hash($key)
     {
-        if (is_float($key) || is_int($key) || is_bool($key)) {
-            $hash = intval($key);
+        if (null === $key) {
+            $hash = 'null';
+
+        } else if (is_int($key)) {
+            $hash = $key;
+
+        } else if (is_float($key)) {
+            $hash = "f_$key";
+
+        } else if (is_bool($key)) {
+            $hash = "b_$key";
 
         } else if (is_string($key)) {
             $hash = "s_$key";
@@ -992,10 +1015,10 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
             $hash = "r_$key";
 
         } else {
-            throw new \InvalidArgumentException(
-                'Key has type %s, which is not supported',
+            throw new \InvalidArgumentException(sprintf(
+                'Unsupported key type "%s"',
                 gettype($key)
-            );
+            ));
         }
 
         $this->map_hash_to_key[$hash] = $key;

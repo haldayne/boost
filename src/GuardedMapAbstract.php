@@ -17,16 +17,16 @@ abstract class GuardedMapAbstract extends Map
 
     /**
      * Set the value at a given key, provided that the value passes the
-     * defined guard.
+     * defined guard. Optionally, normalize the value before setting.
      *
      * {@inheritDoc}
      * @throws \UnexpectedValueException
      */
-    public function offsetSet($key, $value)
+    public function set($key, $value)
     {
         $result = $this->allowed($value);
         if ($this->passes($result)) {
-            parent::offsetSet($key, $this->normalize($value));
+            parent::set($key, $this->normalize($value));
         } else {
             throw new \UnexpectedValueException(sprintf(
                 'Value of type "%s" forbidden in this instance of %s',

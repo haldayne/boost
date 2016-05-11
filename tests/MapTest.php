@@ -43,6 +43,44 @@ class MapTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($c->has(5));
     }
 
+    /**
+     * @dataProvider provides_keys
+     */
+    public function test_common_and_exotic_keys($key)
+    {
+        $map = new Map;
+        $map->set($key, 'foo');
+        $this->assertSame('foo', $map->get($key, 'baz'));
+        $this->assertCount(1, $map);
+        $map->all(function ($v, $k) use ($key) {
+            $this->assertSame($key, $k);
+        });
+    }
+
+    /**
+     * In PHP, float and boolean keys are truncated to integers, thus if you
+     * want to store $a[1] and $a[1.0], you can't, without hashing the key
+     * yourself. Map does not behave this way: these are distinct keys.
+     *
+     * @see http://php.net/manual/en/language.types.array.php
+     */
+    public function test_key_normalization()
+    {
+        $map = new Map;
+        $map->set(true, 'foo');
+        $map->set(1,    'bar');
+        $map->set(1.0,  'baz');
+        $this->assertCount(3, $map);
+    }
+
+    public function test_keys()
+    {
+        $keys = (new Map([ 'foo' => 0, 'bar' => 1 ]))->keys();
+        $this->assertCount(2, $keys);
+        $this->assertSame('foo', $keys[0]);
+        $this->assertSame('bar', $keys[1]);
+    }
+
     /** @dataProvider provides_valid_collection */
     public function test_isEmpty($collection, array $array)
     {
@@ -321,6 +359,28 @@ class MapTest extends \PHPUnit_Framework_TestCase
             [ 2.42 ],
             [ 'string' ],
             [ fopen('php://memory', 'r') ],
+        ];
+    }
+
+    public static function provides_keys()
+    {
+        return [
+            [ null ],
+            [ true ],
+            [ false ],
+            [ 0 ],
+            [ -1 ],
+            [ 1 ],
+            [ 0.0 ],
+            [ -1.1 ],
+            [ 1.1 ],
+            [ '' ],
+            [ 'foo' ],
+            [ [] ],
+            [ [ 'foo' ] ],
+            [ new \StdClass ],
+            [ fopen('php://stdout', 'w') ],
+            [ function () { } ],
         ];
     }
 }
