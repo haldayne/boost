@@ -230,14 +230,26 @@ class MapTest extends \PHPUnit_Framework_TestCase
 
     public function test_push_pop()
     {
-        $num = rand();
+        $num1 = rand();
+        $num2 = rand();
 
         $nums = new Map();
-        $nums->push($num);
-        $this->assertSame(1, $nums->count());
+        $nums->push($num1);
+        $this->assertCount(1, $nums);
+        $nums->push($num2);
+        $this->assertCount(2, $nums);
         $popped = $nums->pop();
-        $this->assertSame(0, $nums->count());
-        $this->assertSame($num, $popped);
+        $this->assertCount(1, $nums);
+        $this->assertSame($num2, $popped);
+        $popped = $nums->pop();
+        $this->assertCount(0, $nums);
+        $this->assertSame($num1, $popped);
+    }
+
+    public function test_vacuous_pop()
+    {
+        $map = new Map;
+        $this->assertNull($map->pop());
     }
 
     public function test_rekey()

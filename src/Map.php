@@ -662,20 +662,25 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     /**
      * Treat the map as a stack and pop an element off its end.
      *
-     * @return mixed
+     * @return mixed|null
      * @api
      */
     public function pop()
     {
-        // get last key of array
+        if (0 === count($this->array)) {
+            return null;
+        }
+
+        // get the last hash of array
         end($this->array);
         $hash = key($this->array);
 
-        // destructively get the element there
+        // temporarily hold the element at that spot
         $element = $this->array[$hash];
-        unset($this->array[$hash]);
 
-        // return it
+        // forget it in our map and return our temporary
+        $this->forget($this->hash_to_key($hash));
+
         return $element;
     }
 
