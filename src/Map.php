@@ -964,7 +964,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      * Track hashes we've created for non-string keys.
      * @var array
      */
-    private $map_key_to_hash = [];
+    private $map_hash_to_key = [];
 
     /**
      * Lookup the hash for the given key. If a hash does not yet exist, one is
@@ -976,10 +976,6 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     private function key_to_hash($key)
     {
-        if (array_key_exists($key, $this->map_key_to_hash)) {
-            return $this->map_key_to_hash[$key];
-        }
-
         if (is_float($key) || is_int($key) || is_bool($key)) {
             $hash = intval($key);
 
@@ -1002,7 +998,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
             );
         }
 
-        $this->map_key_to_hash[$key] = $hash;
+        $this->map_hash_to_key[$hash] = $key;
         return $hash;
      }
 
@@ -1014,16 +1010,14 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
       */
      private function hash_to_key($hash)
      {
-        foreach ($this->map_key_to_hash as $key => $candidate) {
-            if ($hash === $candidate) {
-                return $key;
-            }
+        if (array_key_exists($hash, $this->map_hash_to_key)) {
+            return $this->map_hash_to_key[$hash];
+        } else {
+            throw new \OutOfBoundsException(sprintf(
+                'Hash "%s" has not been created',
+                $hash
+            ));
         }
-
-        throw new \OutOfBoundsException(sprintf(
-            'Hash "%s" has not been created',
-            $hash
-        ));
      }
 
     /**

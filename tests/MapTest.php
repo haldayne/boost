@@ -212,6 +212,22 @@ class MapTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    public function test_rekey_with_exotics()
+    {
+        $fds = (new Map(range(0, 2)))->rekey(function ($number) {
+            switch ($number) {
+            case 0: return fopen('php://stdin', 'r');
+            case 1: return fopen('php://stdout', 'w');
+            case 2: return fopen('php://stderr', 'w');
+            }
+        });
+        $this->assertCount(3, $fds);
+        $fds->all(function ($id, $fd) {
+            $this->assertInternalType('int', $id);
+            $this->assertInternalType('resource', $fd);
+        });
+    }
+
     public function test_into()
     {
         $map = new Map();
