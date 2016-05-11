@@ -240,7 +240,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     public function has($key)
     {
-        return $this->offsetExists($key);
+        $hash = $this->key_to_hash($key);
+        return array_key_exists($hash, $this->array);
     }
 
     /**
@@ -257,10 +258,12 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     public function get($key, $default = null)
     {
-        if ($this->offsetExists($key)) {
-            return $this->offsetGet($key);
+        $hash = $this->key_to_hash($key);
+        if (array_key_exists($hash, $this->array)) {
+            return $this->array[$hash];
+        } else {
+            return $default;
         }
-        return $default;
     }
 
     /**
@@ -291,7 +294,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     public function forget($key)
     {
-        $this->offsetUnset($key);
+        unset($this->array[$this->key_to_hash($key)]);
         return $this;
     }
 
@@ -737,20 +740,18 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     public function offsetExists($key)
     {
-        $hash = $this->key_to_hash($key);
-        return array_key_exists($hash, $this->array);
+        return $this->has($key);
     }
 
     /**
      * Get a value at a given key.
      *
      * @param mixed $key
-     * @return mixed
+     * @return mixed|null
      */
     public function offsetGet($key)
     {
-        $hash = $this->key_to_hash($key);
-        return $this->array[$hash];
+        return $this->get($key, null);
     }
 
     /**
@@ -781,7 +782,7 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
      */
     public function offsetUnset($key)
     {
-        unset($this->array[$this->key_to_hash($key)]);
+        $this->forget($key);
     }
 
     // -----------------------------------------------------------------------
