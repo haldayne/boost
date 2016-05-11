@@ -78,13 +78,13 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     /**
      * Get the keys of this map as a new map.
      * 
-     * @return new static
+     * @return new Map
      * @api
      * @since 1.0.5
      */
     public function keys()
     {
-        $map = new static;
+        $map = new Map;
         foreach (array_keys($this->array) as $hash) {
             $map[] = $this->hash_to_key($hash);
         }

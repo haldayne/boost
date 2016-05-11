@@ -40,6 +40,18 @@ class MapOfStringsTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * We've got a map of strings, and we should be able to call keys on it
+     * and get the keys out, even if the keys aren't themselves strings.
+     */
+    public function test_keys_with_exotic_keys()
+    {
+        $map = new MapOfStrings;
+        $map['foo']          = 'bar';
+        $map[function () {}] = 'baz';
+        $map->keys();
+    }
+
     // -=-= Data Providers =-=-
 
     public static function provides_values()
