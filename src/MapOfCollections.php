@@ -73,6 +73,7 @@ class MapOfCollections extends GuardedMapAbstract
      * {@inheritDoc}
      */
     protected function &normalize(&$value) {
-        return new Map($value);
+        $map = new Map($value);
+        return $map;
     }
 }
