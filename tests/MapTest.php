@@ -337,10 +337,29 @@ class MapTest extends \PHPUnit_Framework_TestCase
         $a = [ 'a', 'b' ];
         $c = new Map($a);
         $i = $c->getIterator();
-        $this->assertInstanceOf('\ArrayIterator', $i);
-        $this->assertEquals($a, $i->getArrayCopy());
+        $this->assertInstanceOf('\Traversable', $i);
+
+        $count = 0;
+        foreach ($c as $key => $value) {
+            $this->assertEquals($a[$key], $value);
+            $count++;
+        }
+
+        $this->assertEquals(count($a), $count);
     }
 
+    public function test_iterator_mutation()
+    {
+        $values = [
+            'a' => new Map(),
+            'b' => new Map(),
+        ];
+        $map = new Map($values);
+
+        foreach ($map as $value) {
+            $this->assertInstanceOf(Map::class, $value);
+        }
+    }
 
     // -=-= Data Providers =-=-
 
