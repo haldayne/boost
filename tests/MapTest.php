@@ -361,6 +361,29 @@ class MapTest extends \PHPUnit_Framework_TestCase
         }
     }
 
+    public function test_non_scalar_keys()
+    {
+        $mapA = new Map();
+        $mapB = new Map([
+            'a' => 1
+        ]);
+        $mapC = new Map([
+            'b' => 2
+        ]);
+
+        $mapA->set($mapB, $mapC);
+
+        foreach ($mapA as $key => $value) {
+            $this->assertEquals($key, $mapB);
+            $this->assertNotEquals($key, $mapA);
+            $this->assertEquals($key->get('a'), 1);
+
+            $this->assertEquals($value, $mapC);
+            $this->assertNotEquals($value, $mapB);
+            $this->assertEquals($value->get('b'), 2);
+        }
+    }
+
     // -=-= Data Providers =-=-
 
     /**
