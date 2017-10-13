@@ -796,25 +796,23 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     /**
      * Get an iterator for the map.
      *
-     * @return \Traversable
+     * @return \Generator
      * @api
      */
     public function getIterator()
     {
-        return (function () {
-            $keys  = $this->keys();
-            $count = count($keys);
-            $index = 0;
+        $keys  = $this->keys();
+        $count = count($keys);
+        $index = 0;
 
-            while ($index < $count) {
-                $key   = $keys[$index];
-                $value = $this->get($key);
+        while ($index < $count) {
+            $key   = $keys[$index];
+            $value = $this->get($key);
 
-                yield $key => $value;
+            yield $key => $value;
 
-                $index++;
-            }
-        })();
+            $index++;
+        }
     }
 
 
