@@ -794,14 +794,25 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     // implements \IteratorAggregate
 
     /**
-     * Get an iterator for a copy of the map.
+     * Get an iterator for the map.
      *
-     * @return \ArrayIterator
+     * @return \Generator
      * @api
      */
     public function getIterator()
     {
-        return new \ArrayIterator($this->toArray());
+        $keys  = $this->keys();
+        $count = count($keys);
+        $index = 0;
+
+        while ($index < $count) {
+            $key   = $keys[$index];
+            $value = $this->get($key);
+
+            yield $key => $value;
+
+            $index++;
+        }
     }
 
 
@@ -963,7 +974,8 @@ class Map implements \Countable, Arrayable, Jsonable, \ArrayAccess, \IteratorAgg
     {
         for (end($this->array); null !== ($hash = key($this->array)); prev($this->array)) {
             $key   = $this->hash_to_key($hash);
-            $value =& current($this->array);
+            $current = current($this->array);
+            $value =& $current;
             if (! $this->passes($this->call($code, $value, $key))) {
                 break;
             }
